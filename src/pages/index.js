@@ -1,0 +1,11 @@
+export { HomePage } from './HomePage'
+export { NotFoundPage } from './NotFoundPage'
+export {
+  QuotationsPage,
+  OrdersPage,
+  OrderDetailPage,
+  SampleReceptionPage,
+  ResultsPage,
+} from './clinico'
+export { PaymentsPage } from './transacciones'
+export { PatientLoginPage, PatientPortalPage } from './portal'

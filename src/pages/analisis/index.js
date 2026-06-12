@@ -1,0 +1,6 @@
+export { AnalysesPage } from './AnalysesPage'
+export { AnalysisSubgroupsPage } from './AnalysisSubgroupsPage'
+export { AnalysisGroupsPage } from './AnalysisGroupsPage'
+export { SamplesCatalogPage } from './SamplesCatalogPage'
+export { MethodsPage } from './MethodsPage'
+export { ComponentsPage } from './ComponentsPage'
