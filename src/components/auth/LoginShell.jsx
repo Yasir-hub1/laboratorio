@@ -32,6 +32,12 @@ const portalHighlights = [
   { icon: Activity, text: 'Resultados cuando estén disponibles' },
 ]
 
+const insuranceHighlights = [
+  { icon: ShieldCheck, text: 'Órdenes de afiliados con tu seguro' },
+  { icon: TestTube2, text: 'Resultados y estudios en lectura' },
+  { icon: Activity, text: 'Exportación de informes en PDF' },
+]
+
 export function LoginShell({
   variant = 'staff',
   title,
@@ -46,25 +52,44 @@ export function LoginShell({
   highlights: highlightsProp,
 }) {
   const isPortal = variant === 'portal'
+  const isInsurance = variant === 'insurance'
   const isAccess = variant === 'access'
   const highlights =
-    highlightsProp ?? (isPortal ? portalHighlights : isAccess ? accessHighlights : staffHighlights)
+    highlightsProp ??
+    (isPortal
+      ? portalHighlights
+      : isInsurance
+        ? insuranceHighlights
+        : isAccess
+          ? accessHighlights
+          : staffHighlights)
   const heroTitle =
     panelTitle ??
     (isPortal
       ? 'Tus resultados, cuando los necesites'
-      : isAccess
-        ? 'Configura tu sesión de trabajo'
-        : 'Laboratorio clínico, bajo control')
+      : isInsurance
+        ? 'Gestión de afiliados, simplificada'
+        : isAccess
+          ? 'Configura tu sesión de trabajo'
+          : 'Laboratorio clínico, bajo control')
   const heroDescription =
     panelDescription ??
     (isPortal
       ? 'Ingresa con el correo registrado para revisar órdenes y resultados de forma segura.'
-      : isAccess
-        ? 'Elige sucursal y rol. Esta selección se envía en cada petición y define tu alcance en el sistema.'
-        : 'Plataforma integral para operaciones, análisis y seguimiento del laboratorio.')
+      : isInsurance
+        ? 'Consulta órdenes completadas asociadas a tu aseguradora y descarga resultados en PDF.'
+        : isAccess
+          ? 'Elige sucursal y rol. Esta selección se envía en cada petición y define tu alcance en el sistema.'
+          : 'Plataforma integral para operaciones, análisis y seguimiento del laboratorio.')
   const badgeLabel =
-    panelBadge ?? (isPortal ? 'Portal de pacientes' : isAccess ? 'Paso 2 · Acceso' : 'Acceso personal')
+    panelBadge ??
+    (isPortal
+      ? 'Portal de pacientes'
+      : isInsurance
+        ? 'Portal de seguros'
+        : isAccess
+          ? 'Paso 2 · Acceso'
+          : 'Acceso personal')
   const showFooter = Boolean(footerText && footerLinkText && footerTo)
 
   const accent = isPortal
@@ -81,7 +106,21 @@ export function LoginShell({
         highlight: 'bg-white/10 text-emerald-200 ring-1 ring-white/10',
         link: 'text-[#2563EB] hover:text-[#1D4ED8]',
       }
-    : {
+    : isInsurance
+      ? {
+          badge: 'bg-violet-600/90 text-white shadow-[0_8px_32px_-8px_rgba(124,58,237,0.45)] backdrop-blur-sm',
+          orb1: 'bg-violet-500/35',
+          orb2: 'bg-purple-400/25',
+          orb3: 'bg-[#2563EB]/12',
+          glassBorder: 'border-violet-500/15',
+          panelGradient: 'from-[#3b0764] via-[#5b21b6] to-[#0f172a]',
+          panelGlow1: 'bg-violet-400/25',
+          panelGlow2: 'bg-purple-300/15',
+          panelRing: 'border-violet-400/20',
+          highlight: 'bg-white/10 text-violet-200 ring-1 ring-white/10',
+          link: 'text-violet-600 hover:text-violet-700',
+        }
+      : {
         badge: 'bg-[#2563EB]/90 text-white shadow-[0_8px_32px_-8px_rgba(37,99,235,0.45)] backdrop-blur-sm',
         orb1: 'bg-[#2563EB]/40',
         orb2: 'bg-[#60A5FA]/30',

@@ -41,7 +41,17 @@ import {
   QuotationsPage,
 } from '@/pages/clinico'
 import { PaymentsPage, TransactionManagePage } from '@/pages/transacciones'
-import { PatientLoginPage, PatientPortalPage } from '@/pages/portal'
+import { PatientLoginPage, PatientOrderDetailPage, PatientOrdersPage } from '@/pages/portal'
+import {
+  InsuranceLoginPage,
+  InsuranceOrderDetailPage,
+  InsuranceOrdersPage,
+} from '@/pages/insurance'
+import { LandingPage } from '@/pages/LandingPage'
+import { PatientPortalLayout } from '@/components/portal/PatientPortalLayout'
+import { InsurancePortalLayout } from '@/components/insurance/InsurancePortalLayout'
+import { PatientGuestOnly, PatientProtectedRoute } from '@/routes/PatientProtectedRoute'
+import { InsuranceGuestOnly, InsuranceProtectedRoute } from '@/routes/InsuranceProtectedRoute'
 import { ROUTES } from '@/utils/constants'
 import { storage } from '@/utils/storage'
 
@@ -80,6 +90,10 @@ function OrderDetailRedirect() {
 
 const router = createBrowserRouter([
   {
+    path: ROUTES.HOME,
+    element: <LandingPage />,
+  },
+  {
     path: ROUTES.LOGIN,
     element: (
       <GuestOnly>
@@ -105,11 +119,43 @@ const router = createBrowserRouter([
   },
   {
     path: ROUTES.PATIENT_LOGIN,
-    element: <PatientLoginPage />,
+    element: (
+      <PatientGuestOnly>
+        <PatientLoginPage />
+      </PatientGuestOnly>
+    ),
   },
   {
     path: ROUTES.PATIENT_PORTAL,
-    element: <PatientPortalPage />,
+    element: (
+      <PatientProtectedRoute>
+        <PatientPortalLayout />
+      </PatientProtectedRoute>
+    ),
+    children: [
+      { index: true, element: <PatientOrdersPage /> },
+      { path: 'ordenes/:orderId', element: <PatientOrderDetailPage /> },
+    ],
+  },
+  {
+    path: ROUTES.INSURANCE_LOGIN,
+    element: (
+      <InsuranceGuestOnly>
+        <InsuranceLoginPage />
+      </InsuranceGuestOnly>
+    ),
+  },
+  {
+    path: ROUTES.INSURANCE_PORTAL,
+    element: (
+      <InsuranceProtectedRoute>
+        <InsurancePortalLayout />
+      </InsuranceProtectedRoute>
+    ),
+    children: [
+      { index: true, element: <InsuranceOrdersPage /> },
+      { path: 'ordenes/:orderId', element: <InsuranceOrderDetailPage /> },
+    ],
   },
   {
     element: (
@@ -118,7 +164,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <DashboardPage /> },
+      { path: 'dashboard', element: <DashboardPage /> },
       // Parámetros
       { path: 'parametros/sucursales', element: <BranchesPage /> },
       { path: 'parametros/seguros', element: <InsurancesPage /> },
@@ -171,7 +217,7 @@ const router = createBrowserRouter([
       { path: ROUTES.NOT_FOUND, element: <NotFoundPage /> },
     ],
   },
-  { path: '*', element: <Navigate to={ROUTES.LOGIN} replace /> },
+  { path: '*', element: <Navigate to={ROUTES.HOME} replace /> },
 ])
 
 export function AppRouter() {

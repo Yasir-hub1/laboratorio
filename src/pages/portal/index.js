@@ -1,2 +1,3 @@
 export { PatientLoginPage } from './PatientLoginPage'
-export { PatientPortalPage } from './PatientPortalPage'
+export { PatientOrdersPage } from './PatientOrdersPage'
+export { PatientOrderDetailPage } from './PatientOrderDetailPage'

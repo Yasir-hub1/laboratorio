@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { ArrowLeft } from 'lucide-react'
 import { PageTransition } from '@/components/common/PageTransition'
 import { Button } from '@/components/ui'
+import { ROUTES } from '@/utils/constants'
 
 export function NotFoundPage() {
   return (
@@ -19,7 +20,7 @@ export function NotFoundPage() {
         La ruta que buscas no existe o fue movida.
       </p>
       <Button asChild className="mt-6">
-        <Link to="/">
+        <Link to={ROUTES.HOME}>
           <ArrowLeft className="h-4 w-4" />
           Volver al inicio
         </Link>

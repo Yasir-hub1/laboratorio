@@ -26,10 +26,11 @@ export const THEME = {
 export const API_TIMEOUT = 60_000
 
 export const ROUTES = {
+  HOME: '/',
   LOGIN: '/login',
   SELECT_ACCESS: '/select-access',
   SELECT_CASH: '/select-cash',
-  DASHBOARD: '/',
+  DASHBOARD: '/dashboard',
   // Parámetros
   INSURANCES: '/parametros/seguros',
   INSURANCE_CATALOG_PRICES: '/parametros/seguros/precios-catalogo',
@@ -78,6 +79,11 @@ export const ROUTES = {
   // Portal paciente
   PATIENT_LOGIN: '/portal/login',
   PATIENT_PORTAL: '/portal',
+  PATIENT_ORDER_DETAIL: '/portal/ordenes/:orderId',
+  // Portal seguros
+  INSURANCE_LOGIN: '/seguros/login',
+  INSURANCE_PORTAL: '/seguros',
+  INSURANCE_ORDER_DETAIL: '/seguros/ordenes/:orderId',
   NOT_FOUND: '*',
 }
 

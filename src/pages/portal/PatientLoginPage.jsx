@@ -9,9 +9,10 @@ import {
   loginLabelClass,
 } from '@/components/auth/LoginShell'
 import { Button, Input } from '@/components/ui'
-import { laboratoryApi } from '@/services/laboratoryApi'
+import { patientPortalApi } from '@/services/patientPortalApi'
 import { storage } from '@/utils/storage'
 import { APP_NAME, ROUTES } from '@/utils/constants'
+import { cn } from '@/utils/cn'
 
 const fieldMotion = {
   hidden: { opacity: 0, y: 12 },
@@ -20,7 +21,8 @@ const fieldMotion = {
 
 export function PatientLoginPage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [loginMode, setLoginMode] = useState('ci')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -28,13 +30,18 @@ export function PatientLoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      const data = await laboratoryApi.loginPatient({ email, password })
-      const token = data?.token ?? data?.access_token
-      const patient = data?.patient ?? data?.user ?? data
-      if (token) storage.setPatientToken(token)
-      if (patient) storage.setPatient(patient)
+      const body = { password }
+      if (loginMode === 'email') {
+        body.email = identifier.trim()
+      } else {
+        body.ci = identifier.trim()
+      }
+
+      const data = await patientPortalApi.login(body)
+      if (data?.token) storage.setPatientToken(data.token)
+      if (data?.patient) storage.setPatient(data.patient)
       toast.success('Bienvenido al portal')
-      navigate(ROUTES.PATIENT_PORTAL)
+      navigate(ROUTES.PATIENT_PORTAL, { replace: true })
     } catch (err) {
       toast.error(err.message)
     } finally {
@@ -46,25 +53,74 @@ export function PatientLoginPage() {
     <LoginShell
       variant="portal"
       title={`${APP_NAME} — Portal`}
-      description="Accede con el correo registrado del paciente para ver órdenes y resultados."
-      footerText="¿Personal del laboratorio?"
-      footerLinkText="Iniciar sesión staff"
-      footerTo={ROUTES.LOGIN}
+      description="Accede con tu carnet (CI) o correo registrado para consultar órdenes y resultados."
+      footerText="¿No eres paciente?"
+      footerLinkText="Volver al inicio"
+      footerTo={ROUTES.HOME}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <motion.div variants={fieldMotion}>
-          <Input
-            label="Correo electrónico"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="paciente@ejemplo.com"
-            required
-            autoComplete="email"
-            className={loginInputClass}
-            labelClassName={loginLabelClass}
-          />
+          <div className="mb-3 flex rounded-xl border border-border bg-surface-muted/50 p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMode('ci')
+                setIdentifier('')
+              }}
+              className={cn(
+                'flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                loginMode === 'ci'
+                  ? 'bg-white text-foreground shadow-sm'
+                  : 'text-muted hover:text-foreground',
+              )}
+            >
+              Carnet (CI)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMode('email')
+                setIdentifier('')
+              }}
+              className={cn(
+                'flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                loginMode === 'email'
+                  ? 'bg-white text-foreground shadow-sm'
+                  : 'text-muted hover:text-foreground',
+              )}
+            >
+              Correo
+            </button>
+          </div>
+
+          {loginMode === 'email' ? (
+            <Input
+              label="Correo electrónico"
+              type="email"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="paciente@ejemplo.com"
+              required
+              autoComplete="email"
+              className={loginInputClass}
+              labelClassName={loginLabelClass}
+            />
+          ) : (
+            <Input
+              label="Carnet de identidad (CI)"
+              type="text"
+              inputMode="numeric"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="1234567"
+              required
+              autoComplete="username"
+              className={loginInputClass}
+              labelClassName={loginLabelClass}
+            />
+          )}
         </motion.div>
+
         <motion.div variants={fieldMotion}>
           <Input
             label="Contraseña"
@@ -77,6 +133,7 @@ export function PatientLoginPage() {
             labelClassName={loginLabelClass}
           />
         </motion.div>
+
         <motion.div variants={fieldMotion}>
           <Button type="submit" className={loginButtonClass} disabled={loading}>
             {loading ? 'Ingresando...' : 'Ingresar'}

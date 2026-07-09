@@ -1,13 +1,13 @@
 import { FlaskConical } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { APP_NAME } from '@/utils/constants'
+import { APP_NAME, ROUTES } from '@/utils/constants'
 
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur-md">
       <div className="container-app flex h-14 items-center justify-between sm:h-16">
         <Link
-          to="/"
+          to={ROUTES.DASHBOARD}
           className="flex min-w-0 items-center gap-2 text-foreground transition-opacity hover:opacity-80"
         >
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-soft">

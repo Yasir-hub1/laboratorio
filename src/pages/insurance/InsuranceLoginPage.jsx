@@ -9,7 +9,8 @@ import {
   loginLabelClass,
 } from '@/components/auth/LoginShell'
 import { Button, Input } from '@/components/ui'
-import { useAuth } from '@/hooks/useAuth'
+import { insurancePortalApi } from '@/services/insurancePortalApi'
+import { storage } from '@/utils/storage'
 import { APP_NAME, ROUTES } from '@/utils/constants'
 
 const fieldMotion = {
@@ -17,41 +18,48 @@ const fieldMotion = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
 }
 
-export function LoginPage() {
-  const { login, isLoading } = useAuth()
+export function InsuranceLoginPage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setLoading(true)
     try {
-      await login(email, password)
-      toast.success('Bienvenido')
-      navigate(ROUTES.SELECT_ACCESS)
+      const data = await insurancePortalApi.login({
+        username: username.trim(),
+        password,
+      })
+      if (data?.token) storage.setInsuranceToken(data.token)
+      if (data?.insurance) storage.setInsurance(data.insurance)
+      toast.success('Bienvenido al portal de seguros')
+      navigate(ROUTES.INSURANCE_PORTAL, { replace: true })
     } catch (err) {
       toast.error(err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <LoginShell
-      variant="staff"
-      title={APP_NAME}
-      description="Ingresa tus credenciales para acceder al laboratorio."
-      footerText="¿No eres personal del laboratorio?"
+      variant="insurance"
+      title={`${APP_NAME} — Seguros`}
+      description="Accede con el usuario asignado por el laboratorio para consultar órdenes de afiliados."
+      footerText="¿Eres paciente o personal?"
       footerLinkText="Volver al inicio"
       footerTo={ROUTES.HOME}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <motion.div variants={fieldMotion}>
           <Input
-            label="Correo o usuario"
+            label="Usuario"
             type="text"
-            name="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="correo@ejemplo.com o usuario"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="usuario@seguro.com"
             required
             autoComplete="username"
             className={loginInputClass}
@@ -62,7 +70,6 @@ export function LoginPage() {
           <Input
             label="Contraseña"
             type="password"
-            name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -72,8 +79,8 @@ export function LoginPage() {
           />
         </motion.div>
         <motion.div variants={fieldMotion}>
-          <Button type="submit" className={loginButtonClass} disabled={isLoading}>
-            {isLoading ? 'Ingresando...' : 'Iniciar sesión'}
+          <Button type="submit" className={loginButtonClass} disabled={loading}>
+            {loading ? 'Ingresando...' : 'Ingresar'}
           </Button>
         </motion.div>
       </form>

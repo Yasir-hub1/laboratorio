@@ -11,6 +11,8 @@ const KEYS = {
   ACCESS: 'biocontrol_access',
   PATIENT_TOKEN: 'biocontrol_patient_token',
   PATIENT: 'biocontrol_patient',
+  INSURANCE_TOKEN: 'biocontrol_insurance_token',
+  INSURANCE: 'biocontrol_insurance',
 }
 
 export const storage = {
@@ -100,6 +102,31 @@ export const storage = {
     }
   },
   setPatient: (p) => localStorage.setItem(KEYS.PATIENT, JSON.stringify(p)),
+
+  hasPatientSession: () => Boolean(localStorage.getItem(KEYS.PATIENT_TOKEN)),
+
+  clearPatientSession: () => {
+    localStorage.removeItem(KEYS.PATIENT_TOKEN)
+    localStorage.removeItem(KEYS.PATIENT)
+  },
+
+  getInsuranceToken: () => localStorage.getItem(KEYS.INSURANCE_TOKEN),
+  setInsuranceToken: (v) => localStorage.setItem(KEYS.INSURANCE_TOKEN, v ?? ''),
+  getInsurance: () => {
+    try {
+      return JSON.parse(localStorage.getItem(KEYS.INSURANCE) ?? 'null')
+    } catch {
+      return null
+    }
+  },
+  setInsurance: (i) => localStorage.setItem(KEYS.INSURANCE, JSON.stringify(i)),
+
+  hasInsuranceSession: () => Boolean(localStorage.getItem(KEYS.INSURANCE_TOKEN)),
+
+  clearInsuranceSession: () => {
+    localStorage.removeItem(KEYS.INSURANCE_TOKEN)
+    localStorage.removeItem(KEYS.INSURANCE)
+  },
 
   clearSession: () => {
     Object.values(KEYS).forEach((k) => localStorage.removeItem(k))
