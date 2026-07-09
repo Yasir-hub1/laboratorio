@@ -2,6 +2,12 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
 
 const STORAGE_KEY = 'biocontrol_sidebar_collapsed'
 
+/** Anchos del sidebar (espaciador + panel fijo). */
+export const SIDEBAR_WIDTH = {
+  collapsed: 'w-[4.5rem]',
+  expanded: 'w-64 xl:w-72',
+}
+
 const SidebarContext = createContext(null)
 
 function readCollapsed() {

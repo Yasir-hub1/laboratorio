@@ -96,7 +96,7 @@ export function OrderDetailPage() {
     return (
       <div>
         <p className="text-muted">Orden no encontrada.</p>
-        <Button className="mt-4" variant="secondary" onClick={() => navigate(ROUTES.ORDERS)}>
+        <Button className="mt-4" variant="secondary" onClick={() => navigate(ROUTES.ORDER_MANAGEMENT)}>
           Volver
         </Button>
       </div>
@@ -140,7 +140,7 @@ export function OrderDetailPage() {
         description="Detalle, muestras, pagos y documentos."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Link to={ROUTES.ORDERS}>
+            <Link to={ROUTES.ORDER_MANAGEMENT}>
               <Button variant="secondary">Volver</Button>
             </Link>
             <Button variant="secondary" onClick={() => setPdfPreview({ type: 'order' })}>

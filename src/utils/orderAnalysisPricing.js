@@ -19,7 +19,7 @@ export function normalizeCatalogAnalysisForOrder(row) {
   return {
     id,
     name: insuranceAnalysisName(row),
-    finalPrice: getCatalogDefaultPrice(row) ?? Number(row.price ?? 0) ?? 0,
+    finalPrice: getCatalogDefaultPrice(row) ?? getReferenceDefaultPrice(row) ?? 0,
     referencePrice: null,
   }
 }
@@ -131,13 +131,20 @@ export function flattenAnalysisGroups(groups) {
  *
  * @returns {Promise<OrderAnalysisGroup[]>}
  */
-export async function fetchAnalysisGroupsForOrder(insuranceId, { insurances = [] } = {}) {
+export async function fetchAnalysisGroupsForOrder(
+  insuranceId,
+  { insurances = [], search = '' } = {},
+) {
+  const params = { paginate: false }
+  const q = String(search ?? '').trim()
+  if (q) params.search = q
+
   if (isParticularInsuranceSelection(insuranceId, insurances)) {
-    const raw = await laboratoryApi.getLaboratoryAnalysisPricesByGroup()
+    const raw = await laboratoryApi.getLaboratoryAnalysisPricesByGroup(params)
     return normalizeAnalysisGroupsFromResponse(raw, { insuranceMode: false })
   }
 
-  const raw = await laboratoryApi.getInsuranceAnalysisPricesByGroup(insuranceId)
+  const raw = await laboratoryApi.getInsuranceAnalysisPricesByGroup(insuranceId, params)
   return normalizeAnalysisGroupsFromResponse(raw, { insuranceMode: true })
 }
 

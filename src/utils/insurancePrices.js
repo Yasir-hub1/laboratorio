@@ -44,9 +44,15 @@ export function insuranceAnalysisCode(row) {
   return row.code ?? row.laboratory_analysis?.code ?? '—'
 }
 
-/** Precio normal del catálogo (GET /laboratory-analyses — opción Sin seguro). */
+/** Precio normal del catálogo (GET /laboratory-analyses/prices-by-group — Particular). */
 export function getCatalogDefaultPrice(row) {
-  const value = row.price ?? row.laboratory_analysis?.price
+  const value =
+    row.default_price ??
+    row.price ??
+    row.base_price ??
+    row.standard_price ??
+    row.laboratory_analysis?.default_price ??
+    row.laboratory_analysis?.price
   return value != null && value !== '' ? Number(value) : null
 }
 

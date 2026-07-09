@@ -149,6 +149,9 @@ export function DataTable({
   /** false oculta el botón aunque exista onRefresh */
   enableRefresh,
   refreshLabel = 'Actualizar listado',
+  onRowClick,
+  selectedRowId,
+  getRowClassName,
 }) {
   const isServer = Boolean(serverPagination)
 
@@ -413,7 +416,15 @@ export function DataTable({
               rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-border last:border-0 hover:bg-surface-muted/60"
+                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  className={cn(
+                    'border-b border-border last:border-0 hover:bg-surface-muted/60',
+                    onRowClick && 'cursor-pointer',
+                    selectedRowId != null &&
+                      String(row.original?.id) === String(selectedRowId) &&
+                      'bg-primary/10 hover:bg-primary/10',
+                    getRowClassName?.(row.original),
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td

@@ -119,7 +119,7 @@ export function AssignCashModal({ open, onOpenChange, user }) {
         <LoadingScreen message="Cargando cajas…" />
       ) : cashes.length === 0 ? (
         <p className="text-sm text-muted">
-          No hay cajas en las sucursales asignadas. Créalas en Caja → Cajas.
+          No hay cajas en las sucursales asignadas. Créalas en el módulo de Cajas.
         </p>
       ) : (
         <ul className="max-h-64 space-y-2 overflow-y-auto">

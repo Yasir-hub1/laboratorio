@@ -55,13 +55,25 @@ export const ROUTES = {
   OUTFLOWS: '/caja/egresos',
   TYPE_INFLOWS: '/caja/tipos-ingreso',
   TYPE_OUTFLOWS: '/caja/tipos-egreso',
-  // Clínico
-  QUOTATIONS: '/clinico/cotizaciones',
-  ORDERS: '/clinico/ordenes',
-  ORDER_DETAIL: '/clinico/ordenes/:id',
-  SAMPLE_RECEPTION: '/clinico/muestras',
-  RESULTS: '/clinico/resultados',
+  // Recepción y atención
+  RECEPTION_PATIENTS: '/recepcion/pacientes',
+  ORDER_RECEPTION: '/recepcion/crear-orden',
+  QUOTATIONS: '/recepcion/cotizaciones',
+  ORDER_MANAGEMENT: '/recepcion/gestionar-orden',
+  ORDER_DETAIL: '/recepcion/gestionar-orden/:id',
+  /** @deprecated */
+  ORDERS: '/recepcion/gestionar-orden',
+  /** @deprecated rutas /clinico/* y /laboratorio/* redirigen aquí */
+  LAB_SAMPLE_RECEPTION: '/recepcion/gestionar-orden',
+  LAB_RESULTS_ENTRY: '/recepcion/gestionar-orden',
+  LAB_RESULTS_VALIDATION: '/recepcion/gestionar-orden',
+  LAB_ORDER_CLOSURE: '/recepcion/gestionar-orden',
+  LAB_ORDERS_COMPLETED: '/recepcion/gestionar-orden',
+  LAB_ORDERS_ANNULLED: '/recepcion/gestionar-orden',
+  SAMPLE_RECEPTION: '/recepcion/gestionar-orden',
+  RESULTS: '/recepcion/gestionar-orden',
   // Transacciones
+  TRANSACTION_MANAGEMENT: '/transacciones/gestionar',
   PAYMENTS: '/transacciones/pagos',
   // Portal paciente
   PATIENT_LOGIN: '/portal/login',
@@ -119,14 +131,14 @@ export const NAV_GROUPS = [
   },
   {
     id: 'clinico',
-    label: 'Clínico',
-    shortLabel: 'Clínico',
+    label: 'Recepción y atención',
+    shortLabel: 'Recepción y atención',
     icon: 'ClipboardList',
     items: [
+      { to: ROUTES.RECEPTION_PATIENTS, label: 'Gestionar pacientes', icon: 'UserCircle' },
+      { to: ROUTES.ORDER_RECEPTION, label: 'Crear orden', icon: 'ClipboardPlus' },
       { to: ROUTES.QUOTATIONS, label: 'Cotizaciones', icon: 'FileText' },
-      { to: ROUTES.ORDERS, label: 'Órdenes', icon: 'ClipboardList' },
-      { to: ROUTES.SAMPLE_RECEPTION, label: 'Toma de muestras', icon: 'Syringe' },
-      { to: ROUTES.RESULTS, label: 'Resultados', icon: 'Activity' },
+      { to: ROUTES.ORDER_MANAGEMENT, label: 'Gestionar orden', icon: 'ClipboardList' },
     ],
   },
   {
@@ -134,7 +146,10 @@ export const NAV_GROUPS = [
     label: 'Transacciones',
     shortLabel: 'Transacciones',
     icon: 'CreditCard',
-    items: [{ to: ROUTES.PAYMENTS, label: 'Pagos', icon: 'CreditCard' }],
+    items: [
+      { to: ROUTES.TRANSACTION_MANAGEMENT, label: 'Gestionar Transacciones', icon: 'Wallet' },
+      { to: ROUTES.PAYMENTS, label: 'Pagos', icon: 'CreditCard' },
+    ],
   },
 ]
 
@@ -149,10 +164,10 @@ export const TAB_BAR_ITEMS = [
   },
   {
     id: 'clinical',
-    to: ROUTES.ORDERS,
-    label: 'Clínico',
+    to: ROUTES.ORDER_MANAGEMENT,
+    label: 'Recepción y atención',
     icon: 'ClipboardList',
-    prefixes: ['/clinico'],
+    prefixes: ['/recepcion', '/clinico'],
   },
   {
     id: 'cash',
@@ -194,4 +209,19 @@ export const ORDER_STATUS = {
   2: { label: 'En proceso', color: 'indigo' },
   3: { label: 'Completada', color: 'emerald' },
   4: { label: 'Anulada', color: 'red' },
+}
+
+export const ORDER_WORKFLOW_STATUS = {
+  1: { label: 'Pendiente', color: 'amber' },
+  2: { label: 'Iniciada', color: 'blue' },
+  3: { label: 'En revisión', color: 'indigo' },
+  4: { label: 'Revisada', color: 'blue' },
+  5: { label: 'Completada', color: 'emerald' },
+  6: { label: 'Anulada', color: 'red' },
+}
+
+export const ORDER_PAYMENT_STATUS = {
+  1: { label: 'Pendiente', color: 'amber' },
+  2: { label: 'Anulado', color: 'red' },
+  3: { label: 'Pagado', color: 'emerald' },
 }

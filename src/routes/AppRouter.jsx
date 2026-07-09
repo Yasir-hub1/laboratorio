@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from './ProtectedRoute'
 import { LoginPage } from '@/pages/auth/LoginPage'
@@ -36,12 +36,11 @@ import {
 } from '@/pages/caja'
 import {
   OrderDetailPage,
-  OrdersPage,
+  OrderManagePage,
+  OrderReceptionPage,
   QuotationsPage,
-  ResultsPage,
-  SampleReceptionPage,
 } from '@/pages/clinico'
-import { PaymentsPage } from '@/pages/transacciones'
+import { PaymentsPage, TransactionManagePage } from '@/pages/transacciones'
 import { PatientLoginPage, PatientPortalPage } from '@/pages/portal'
 import { ROUTES } from '@/utils/constants'
 import { storage } from '@/utils/storage'
@@ -72,6 +71,11 @@ function CashOnly({ children }) {
   if (!storage.hasAccessContext()) return <Navigate to={ROUTES.SELECT_ACCESS} replace />
   if (storage.hasCashContext()) return <Navigate to={ROUTES.DASHBOARD} replace />
   return children
+}
+
+function OrderDetailRedirect() {
+  const { id } = useParams()
+  return <Navigate to={ROUTES.ORDER_DETAIL.replace(':id', id)} replace />
 }
 
 const router = createBrowserRouter([
@@ -140,13 +144,29 @@ const router = createBrowserRouter([
       { path: 'caja/egresos', element: <OutflowsPage /> },
       { path: 'caja/tipos-ingreso', element: <TypeInflowsPage /> },
       { path: 'caja/tipos-egreso', element: <TypeOutflowsPage /> },
-      // Clínico
-      { path: 'clinico/cotizaciones', element: <QuotationsPage /> },
-      { path: 'clinico/ordenes', element: <OrdersPage /> },
-      { path: 'clinico/ordenes/:id', element: <OrderDetailPage /> },
-      { path: 'clinico/muestras', element: <SampleReceptionPage /> },
-      { path: 'clinico/resultados', element: <ResultsPage /> },
+      // Recepción y atención
+      { path: 'recepcion/pacientes', element: <PatientsPage /> },
+      { path: 'recepcion/crear-orden', element: <OrderReceptionPage /> },
+      { path: 'recepcion/cotizaciones', element: <QuotationsPage /> },
+      { path: 'recepcion/gestionar-orden', element: <OrderManagePage /> },
+      { path: 'recepcion/gestionar-orden/:id', element: <OrderDetailPage /> },
+      // Redirecciones legacy
+      { path: 'clinico/recepcion-orden', element: <Navigate to={ROUTES.ORDER_RECEPTION} replace /> },
+      { path: 'clinico/cotizaciones', element: <Navigate to={ROUTES.QUOTATIONS} replace /> },
+      { path: 'clinico/gestion-ordenes', element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace /> },
+      { path: 'clinico/gestion-ordenes/:id', element: <OrderDetailRedirect /> },
+      { path: 'clinico/ordenes', element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace /> },
+      { path: 'clinico/ordenes/:id', element: <OrderDetailRedirect /> },
+      { path: 'clinico/muestras', element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace /> },
+      { path: 'clinico/resultados', element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace /> },
+      { path: 'laboratorio/recepcion', element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace /> },
+      { path: 'laboratorio/ingreso-resultados', element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace /> },
+      { path: 'laboratorio/validacion', element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace /> },
+      { path: 'laboratorio/cierre', element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace /> },
+      { path: 'laboratorio/completadas', element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace /> },
+      { path: 'laboratorio/anuladas', element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace /> },
       // Transacciones
+      { path: 'transacciones/gestionar', element: <TransactionManagePage /> },
       { path: 'transacciones/pagos', element: <PaymentsPage /> },
       { path: ROUTES.NOT_FOUND, element: <NotFoundPage /> },
     ],

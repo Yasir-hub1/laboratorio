@@ -59,7 +59,7 @@ export function SelectCashPage() {
       navigate(ROUTES.SELECT_ACCESS, { replace: true })
       return
     }
-
+// console.log('cashStatus', cashStatus)
     setLoadingCashes(true)
     try {
       const userId = resolveEntityId(storage.getUser())
@@ -246,7 +246,7 @@ export function SelectCashPage() {
           {cashes.length === 0 ? (
             <p className="rounded-xl border border-amber-200/80 bg-amber-50/80 p-4 text-sm text-amber-900">
               No tienes cajas asignadas en esta sucursal. Un administrador debe crear la caja en
-              Caja → Cajas y asignártela en Usuarios.
+              Caja y asignártela en Usuarios.
             </p>
           ) : (
             <>
@@ -296,14 +296,23 @@ export function SelectCashPage() {
                         {isOpen ? 'Caja con apertura activa' : 'Caja sin apertura activa'}
                       </p>
                       {isOpen ? (
-                        <p className="mt-1 text-xs opacity-90">
-                          Puedes continuar al sistema.
-                          {cashStatus.openingId
-                            ? ` Apertura #${cashStatus.openingId}`
-                            : ''}
-                          {cashStatus.opening?.initial_amount != null &&
-                            ` · Monto: ${formatCurrency(cashStatus.opening.initial_amount)}`}
-                        </p>
+                        <div className="mt-1 space-y-0.5 text-xs opacity-90">
+                          <p>Puedes continuar al sistema.</p>
+                          {/* {cashStatus.openingId && (
+                            <p>Apertura #{cashStatus.openingId}</p>
+                          )} */}
+                          {cashStatus.opening?.initial_amount != null && (
+                            <p>
+                              Monto inicial:{' '}
+                              {formatCurrency(cashStatus.opening.initial_amount)}
+                            </p>
+                          )}
+                          {cashStatus.currentAmount != null && (
+                            <p>
+                              Monto actual: {formatCurrency(cashStatus.currentAmount)}
+                            </p>
+                          )}
+                        </div>
                       ) : (
                         <p className="mt-1 text-xs opacity-90">
                           Ingresa el monto inicial para abrir la caja antes de continuar.
@@ -341,6 +350,17 @@ export function SelectCashPage() {
                   <div>
                     <p className="font-medium">Listo para entrar</p>
                     <p className="text-xs opacity-90">{cashDisplayName(selectedCash)}</p>
+                    {cashStatus?.opening?.initial_amount != null && (
+                      <p className="text-xs opacity-90">
+                        Monto inicial:{' '}
+                        {formatCurrency(cashStatus.opening.initial_amount)}
+                      </p>
+                    )}
+                    {cashStatus?.currentAmount != null && (
+                      <p className="text-xs opacity-90">
+                        Monto actual: {formatCurrency(cashStatus.currentAmount)}
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               )}

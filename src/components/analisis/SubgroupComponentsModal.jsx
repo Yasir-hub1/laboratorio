@@ -48,6 +48,21 @@ function formatRefRange(row) {
   return min != null ? String(min) : String(max)
 }
 
+function validateRefRange(refMin, refMax) {
+  const minStr = String(refMin ?? '').trim()
+  const maxStr = String(refMax ?? '').trim()
+  if (!minStr || !maxStr) return null
+
+  const min = Number(minStr)
+  const max = Number(maxStr)
+  if (Number.isNaN(min) || Number.isNaN(max)) return null
+
+  if (min >= max) {
+    return 'La referencia mínima debe ser menor que la referencia máxima.'
+  }
+  return null
+}
+
 /**
  * CRUD de component-analyses de un subgrupo (GET /analysis-subgroups/{id}/components).
  */
@@ -65,6 +80,7 @@ export function SubgroupComponentsModal({
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [refRangeError, setRefRangeError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const fetchComponents = useCallback(
@@ -91,18 +107,21 @@ export function SubgroupComponentsModal({
       setFormOpen(false)
       setEditing(null)
       setForm(EMPTY_FORM)
+      setRefRangeError('')
     }
   }, [open])
 
   const openCreate = () => {
     setEditing(null)
     setForm(EMPTY_FORM)
+    setRefRangeError('')
     setFormOpen(true)
   }
 
   const openEdit = (row) => {
     setEditing(row)
     setForm(rowToForm(row))
+    setRefRangeError('')
     setFormOpen(true)
   }
 
@@ -174,11 +193,22 @@ export function SubgroupComponentsModal({
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
+    if (name === 'ref_min' || name === 'ref_max') {
+      setRefRangeError('')
+    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!subgroupId || !analysisId) return
+
+    const rangeError = validateRefRange(form.ref_min, form.ref_max)
+    if (rangeError) {
+      setRefRangeError(rangeError)
+      toast.error(rangeError)
+      return
+    }
+
     setSubmitting(true)
     try {
       const payload = buildComponentAnalysisPayload({
@@ -280,6 +310,7 @@ export function SubgroupComponentsModal({
             step="any"
             value={form.ref_min}
             onChange={handleChange}
+            error={refRangeError}
           />
           <Input
             label="Ref. máxima"
@@ -288,6 +319,7 @@ export function SubgroupComponentsModal({
             step="any"
             value={form.ref_max}
             onChange={handleChange}
+            error={refRangeError}
           />
           <Textarea
             className="sm:col-span-2"

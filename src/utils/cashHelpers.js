@@ -28,12 +28,26 @@ export function resolveCashId(cash) {
   return resolveEntityId(cash) ?? (cash?.cash_id != null ? String(cash.cash_id) : undefined)
 }
 
+function parseAmount(value) {
+  if (value == null || value === '') return null
+  const amount = Number(value)
+  return Number.isNaN(amount) ? null : amount
+}
+
 /**
  * Interpreta GET /cashes/{id}/status (apertura activa o no).
  */
 export function parseCashOpeningStatus(data) {
   if (!data) {
-    return { isOpen: false, openingId: null, opening: null }
+    return {
+      isOpen: false,
+      openingId: null,
+      opening: null,
+      currentAmount: null,
+      initialAmount: null,
+      totalInflow: null,
+      totalOutflow: null,
+    }
   }
 
   const opening =
@@ -68,5 +82,37 @@ export function parseCashOpeningStatus(data) {
     isOpen,
     openingId: openingId != null && openingId !== '' ? String(openingId) : null,
     opening,
+    currentAmount: parseAmount(data.current_amount ?? opening?.current_amount),
+    initialAmount: parseAmount(
+      data.initial_amount ?? opening?.initial_amount ?? opening?.opening_amount,
+    ),
+    totalInflow: parseAmount(data.total_inflow ?? opening?.total_inflow),
+    totalOutflow: parseAmount(data.total_outflow ?? opening?.total_outflow),
+  }
+}
+
+/** Combina datos de apertura activa (listado + status en vivo). */
+export function mergeActiveOpeningDisplay(activeOpening, cashStatus) {
+  const opening = cashStatus?.opening ?? activeOpening
+
+  return {
+    id: cashStatus?.openingId ?? activeOpening?.id ?? opening?.id ?? null,
+    openedAt:
+      opening?.opened_at ?? opening?.created_at ?? activeOpening?.opened_at ?? null,
+    initialAmount: parseAmount(
+      cashStatus?.initialAmount ??
+        opening?.initial_amount ??
+        opening?.opening_amount ??
+        activeOpening?.initial_amount,
+    ),
+    currentAmount: parseAmount(
+      cashStatus?.currentAmount ?? opening?.current_amount ?? activeOpening?.current_amount,
+    ),
+    totalInflow: parseAmount(
+      cashStatus?.totalInflow ?? opening?.total_inflow ?? activeOpening?.total_inflow,
+    ),
+    totalOutflow: parseAmount(
+      cashStatus?.totalOutflow ?? opening?.total_outflow ?? activeOpening?.total_outflow,
+    ),
   }
 }

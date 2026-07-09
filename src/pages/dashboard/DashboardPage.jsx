@@ -6,6 +6,7 @@ import {
   ArrowDownLeft,
   ArrowRight,
   ArrowUpRight,
+  ClipboardList,
   CreditCard,
   FileText,
   FlaskConical,
@@ -53,9 +54,8 @@ const statStyles = {
 }
 
 const quickLinks = [
-  { to: ROUTES.ORDERS, label: 'Nueva orden', icon: Plus, highlight: true },
-  { to: ROUTES.SAMPLE_RECEPTION, label: 'Toma de muestras', icon: Syringe },
-  { to: ROUTES.RESULTS, label: 'Resultados', icon: Activity },
+  { to: ROUTES.ORDER_RECEPTION, label: 'Nueva orden', icon: Plus, highlight: true },
+  { to: ROUTES.ORDER_MANAGEMENT, label: 'Gestionar orden', icon: ClipboardList },
   { to: ROUTES.QUOTATIONS, label: 'Cotizar', icon: FileText },
   { to: ROUTES.PATIENTS, label: 'Pacientes', icon: UserCircle },
   { to: ROUTES.OPEN_CASH, label: 'Caja', icon: Wallet },
@@ -279,21 +279,21 @@ export function DashboardPage() {
 
           <div className="mb-4 grid grid-cols-3 gap-2">
             <Link
-              to={ROUTES.ORDERS}
+              to={`${ROUTES.ORDER_MANAGEMENT}?tab=1`}
               className="glass-list-item flex flex-col items-center gap-1 px-2 py-3 text-center transition-colors hover:border-amber-200/60 hover:bg-amber-50/50"
             >
               <span className="text-xl font-bold tabular-nums text-amber-700">{pipeline.registered}</span>
               <span className="text-[11px] font-medium leading-tight text-muted">Sin muestra</span>
             </Link>
             <Link
-              to={ROUTES.RESULTS}
+              to={`${ROUTES.ORDER_MANAGEMENT}?tab=2`}
               className="glass-list-item flex flex-col items-center gap-1 px-2 py-3 text-center transition-colors hover:border-indigo-200/60 hover:bg-indigo-50/50"
             >
               <span className="text-xl font-bold tabular-nums text-indigo-700">{pipeline.inLab}</span>
               <span className="text-[11px] font-medium leading-tight text-muted">En laboratorio</span>
             </Link>
             <Link
-              to={ROUTES.ORDERS}
+              to={`${ROUTES.ORDER_MANAGEMENT}?tab=5`}
               className="glass-list-item flex flex-col items-center gap-1 px-2 py-3 text-center transition-colors hover:border-emerald-200/60 hover:bg-emerald-50/50"
             >
               <span className="text-xl font-bold tabular-nums text-emerald-700">
@@ -318,7 +318,7 @@ export function DashboardPage() {
                   variants={fadeUp}
                 >
                   <Link
-                    to={`/clinico/ordenes/${order.id}`}
+                    to={ROUTES.ORDER_DETAIL.replace(':id', order.id)}
                     className="glass-list-item flex items-start gap-3 overflow-hidden px-3 py-2.5 transition-colors hover:border-primary/25 hover:bg-white/50"
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
@@ -349,7 +349,7 @@ export function DashboardPage() {
           )}
 
           <Link
-            to={ROUTES.ORDERS}
+            to={ROUTES.ORDER_MANAGEMENT}
             className="link-primary mt-4 inline-flex items-center gap-1.5 text-sm font-medium"
           >
             Ver todas las órdenes

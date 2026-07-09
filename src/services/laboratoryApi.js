@@ -223,10 +223,30 @@ export const laboratoryApi = {
 
   // ——— Órdenes ———
   getLaboratoryOrders: (params) => listRequest('/laboratory-orders', params),
+  getLaboratoryOrderQueueCounts: () => request('get', '/laboratory-orders/queue-counts'),
   getLaboratoryOrder: (id) => request('get', `/laboratory-orders/${id}`),
   createLaboratoryOrder: (body) => request('post', '/laboratory-orders', body),
   annulLaboratoryOrder: (id, body) =>
     request('post', `/laboratory-orders/${id}/annular`, annulmentBody(body)),
+  getReceptionSummary: (id) => request('get', `/laboratory-orders/${id}/reception-summary`),
+  getResultsEntrySummary: (id) =>
+    request('get', `/laboratory-orders/${id}/results-entry-summary`),
+  getClosureSummary: (id) =>
+    request('get', `/laboratory-orders/${id}/closure-summary`, null, {
+      params: { include: 'results' },
+    }),
+  saveOrderResults: (id, body, { includeChecks = false } = {}) =>
+    request('post', `/laboratory-orders/${id}/save-results`, body, {
+      params: includeChecks ? { include: 'checks' } : undefined,
+    }),
+  validateOrderResults: (id, body, { includeChecks = true } = {}) =>
+    request('post', `/laboratory-orders/${id}/validate-results`, body, {
+      params: includeChecks ? { include: 'checks' } : undefined,
+    }),
+  transitionLaboratoryOrder: (id, body) =>
+    request('post', `/laboratory-orders/${id}/workflow-transition`, body),
+  completeLaboratoryOrder: (id) =>
+    request('post', `/laboratory-orders/${id}/complete`, {}),
   getOrderSamples: (id) => request('get', `/laboratory-orders/${id}/samples`),
   getOrderPdf: (id) =>
     httpClient.get(`/laboratory-orders/${id}/pdf`, { responseType: 'blob' }),
@@ -255,6 +275,13 @@ export const laboratoryApi = {
   getPaymentsByOrder: (orderId) => request('get', `/payments/order/${orderId}`),
   annulPayment: (id, body) =>
     request('post', `/payments/${id}/annular`, annulmentBody(body)),
+  getPaymentPdf: (id) =>
+    httpClient.get(`/payments/${id}/pdf`, { responseType: 'blob' }),
+
+  // ——— Transacciones ———
+  getTransactionsContext: (params) => listRequest('/transactions/context', params),
+  getTransactionOrders: (params) => listRequest('/transactions/orders', params),
+  getTransactionOrder: (id) => request('get', `/transactions/orders/${id}`),
 
   // ——— Empresa / Config ———
   getCompany: () => request('get', '/company'),

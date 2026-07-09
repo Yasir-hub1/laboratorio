@@ -7,7 +7,7 @@ import { AppBackground } from './AppBackground'
 import { AnimatedOutlet } from '@/components/common/AnimatedOutlet'
 import { PWAUpdatePrompt } from '@/components/common/PWAUpdatePrompt'
 import { Button } from '@/components/ui'
-import { SidebarProvider, useSidebar } from '@/context/SidebarContext'
+import { SidebarProvider, useSidebar, SIDEBAR_WIDTH } from '@/context/SidebarContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { APP_NAME, ROUTES } from '@/utils/constants'
@@ -19,13 +19,12 @@ function DesktopSidebarShell() {
 
   return (
     <div
+      aria-hidden
       className={cn(
-        'relative z-20 hidden shrink-0 self-stretch transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:flex',
-        collapsed ? 'w-[4.5rem] overflow-visible' : 'w-64 xl:w-72',
+        'hidden shrink-0 transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:block',
+        collapsed ? SIDEBAR_WIDTH.collapsed : SIDEBAR_WIDTH.expanded,
       )}
-    >
-      <Sidebar />
-    </div>
+    />
   )
 }
 
@@ -48,7 +47,12 @@ function AppLayoutContent() {
     <div className="relative flex min-h-dvh items-stretch">
       <AppBackground />
 
-      {isDesktop && <DesktopSidebarShell />}
+      {isDesktop && (
+        <>
+          <DesktopSidebarShell />
+          <Sidebar />
+        </>
+      )}
 
       <div className="relative z-10 flex min-h-dvh min-w-0 flex-1 flex-col">
         <header

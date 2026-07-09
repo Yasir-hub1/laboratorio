@@ -2,12 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { ChevronLeft, ChevronRight, FlaskConical } from 'lucide-react'
 import { cn } from '@/utils/cn'
-import { useSidebar } from '@/context/SidebarContext'
+import { useSidebar, SIDEBAR_WIDTH } from '@/context/SidebarContext'
 import { APP_NAME, THEME } from '@/utils/constants'
 import { NavMenu } from './NavMenu'
 
 const FLYOUT_WIDTH = 256
 const HOVER_LEAVE_DELAY = 180
+
+function sidebarWidthClass(collapsed) {
+  return collapsed ? SIDEBAR_WIDTH.collapsed : SIDEBAR_WIDTH.expanded
+}
 
 function SidebarBackdrop() {
   return (
@@ -107,7 +111,7 @@ function SidebarHeader({ collapsed, showFullMenu, onToggle }) {
 
 function SidebarPanel({ onNavigate, collapsed, showFullMenu, onToggle, className }) {
   return (
-    <div className={cn('relative flex h-full min-h-dvh flex-col overflow-hidden', className)}>
+    <div className={cn('relative flex h-full flex-col overflow-hidden', className)}>
       <SidebarBackdrop />
       <SidebarHeader collapsed={collapsed} showFullMenu={showFullMenu} onToggle={onToggle} />
       <motion.div
@@ -164,7 +168,11 @@ export function Sidebar({ onNavigate }) {
 
   return (
     <div
-      className={cn('relative h-full min-h-dvh w-full', collapsed && 'overflow-visible')}
+      className={cn(
+        'fixed inset-y-0 left-0 z-20 h-dvh transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+        sidebarWidthClass(collapsed),
+        collapsed && 'overflow-visible',
+      )}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -186,7 +194,7 @@ export function Sidebar({ onNavigate }) {
             animate={{ opacity: 1, x: 0, width: FLYOUT_WIDTH }}
             exit={{ opacity: 0, x: -12, width: 72 }}
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-0 top-0 z-50 h-full min-h-dvh overflow-hidden rounded-r-2xl shadow-[8px_0_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/10"
+            className="absolute left-0 top-0 z-50 h-full overflow-hidden rounded-r-2xl shadow-[8px_0_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/10"
             style={{ width: FLYOUT_WIDTH }}
           >
             <SidebarPanel

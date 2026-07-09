@@ -163,6 +163,49 @@ export function buildReceiveSamplePayload(form) {
   })
 }
 
+export function buildReceiveMultipleSamplesPayload({ laboratory_order_id, samples }) {
+  return {
+    laboratory_order_id: asApiId(laboratory_order_id),
+    samples: (samples ?? [])
+      .map((s) =>
+        pickDefined({
+          sample_id: asApiId(s.sample_id),
+          code: s.code?.trim() || undefined,
+          volume: s.volume || undefined,
+          note: s.note || undefined,
+        }),
+      )
+      .filter((s) => s.sample_id),
+  }
+}
+
+export function buildSaveOrderResultsPayload(entries) {
+  return {
+    entries: (entries ?? [])
+      .map((entry) => ({
+        sample_analysis_id: asApiId(entry.sample_analysis_id),
+        results: (entry.results ?? [])
+          .map((r) =>
+            pickDefined({
+              component_analysis_id: asApiId(r.component_analysis_id),
+              value_obtained: r.value_obtained != null ? String(r.value_obtained) : undefined,
+            }),
+          )
+          .filter((r) => r.component_analysis_id),
+      }))
+      .filter((e) => e.sample_analysis_id && e.results.length > 0),
+  }
+}
+
+export function buildValidateOrderResultsPayload({ result_ids, validate_all }) {
+  if (validate_all) return { validate_all: true }
+  return { result_ids: (result_ids ?? []).map(asApiId).filter(Boolean) }
+}
+
+export function buildWorkflowTransitionPayload(workflow_status) {
+  return { workflow_status: Number(workflow_status) }
+}
+
 export function buildComponentResultsPayload(sampleAnalysisId, results, draft) {
   return {
     sample_analysis_id: asApiId(sampleAnalysisId),

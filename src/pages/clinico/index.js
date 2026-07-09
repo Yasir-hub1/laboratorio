@@ -1,5 +1,7 @@
 export { QuotationsPage } from './QuotationsPage'
 export { OrdersPage } from './OrdersPage'
+export { OrderReceptionPage } from './OrderReceptionPage'
+export { OrderManagePage } from './OrderManagePage'
 export { OrderDetailPage } from './OrderDetailPage'
 export { SampleReceptionPage } from './SampleReceptionPage'
 export { ResultsPage } from './ResultsPage'

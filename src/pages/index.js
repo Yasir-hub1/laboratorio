@@ -7,5 +7,5 @@ export {
   SampleReceptionPage,
   ResultsPage,
 } from './clinico'
-export { PaymentsPage } from './transacciones'
+export { PaymentsPage, TransactionManagePage } from './transacciones'
 export { PatientLoginPage, PatientPortalPage } from './portal'

@@ -58,3 +58,15 @@ export function buildOrderPdfFilename(orderId, type = 'order', code) {
   const suffix = code ? `-${code}` : `-${orderId}`
   return type === 'results' ? `resultados-orden${suffix}.pdf` : `orden${suffix}.pdf`
 }
+
+/** Abre el PDF de orden en una nueva pestaña (flujo post-creación). */
+export async function openOrderPdfInNewTab(fetchPdf, orderId, code) {
+  const response = await fetchPdf(orderId)
+  const blob = await blobFromPdfResponse(response)
+  const url = URL.createObjectURL(blob)
+  const opened = window.open(url, '_blank')
+  if (!opened) {
+    downloadPdfBlob(blob, buildOrderPdfFilename(orderId, 'order', code))
+  }
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
