@@ -74,9 +74,11 @@ export function buildPaymentPdfUrl(paymentId) {
   if (roleId) params.set('role_id', roleId)
   if (token) params.set('token', token)
   const qs = params.toString()
+  /** @deprecated Prefer PaymentPdfPreviewModal + GET /payments/{id}/pdf-data */
   return `${base}/payments/${paymentId}/pdf${qs ? `?${qs}` : ''}`
 }
 
+/** @deprecated Prefer PaymentPdfPreviewModal (plantilla HTML + pdf-data). */
 export function openPaymentPdfInNewTab(paymentId) {
   if (!paymentId) return false
   const opened = window.open(buildPaymentPdfUrl(paymentId), '_blank')

@@ -259,6 +259,7 @@ export function buildCloseCashPayload(body = {}) {
         : body.closing_amount != null
           ? Number(body.closing_amount)
           : undefined,
+    close_note: body.close_note || body.note || undefined,
   })
 }
 

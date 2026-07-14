@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FileText, Loader2 } from 'lucide-react'
+import { PaymentPdfPreviewModal } from '@/components/common/PaymentPdfPreviewModal'
 import {
   Badge,
   Button,
@@ -20,7 +21,6 @@ import { buildPaymentPayload } from '@/utils/apiPayload'
 import {
   computePaymentPreview,
   isCashPaymentMethod,
-  openPaymentPdfInNewTab,
   orderPaymentStatusLabel,
   orderPaymentStatusVariant,
   paymentRowStatusLabel,
@@ -47,7 +47,8 @@ export function TransactionOrderDrawer({
   const [payAmount, setPayAmount] = useState('')
   const [annulTarget, setAnnulTarget] = useState(null)
   const [annulReason, setAnnulReason] = useState('')
-  const [pdfFallback, setPdfFallback] = useState(null)
+  const [pdfPaymentId, setPdfPaymentId] = useState(null)
+  const [pdfPaymentCode, setPdfPaymentCode] = useState(null)
 
   const orderInfo = detail?.order ?? order
   const payments = detail?.payments ?? []
@@ -81,7 +82,8 @@ export function TransactionOrderDrawer({
       setPayAmount('')
       setAnnulTarget(null)
       setAnnulReason('')
-      setPdfFallback(null)
+      setPdfPaymentId(null)
+      setPdfPaymentCode(null)
     }
   }, [open, loadDetail])
 
@@ -143,8 +145,10 @@ export function TransactionOrderDrawer({
         toast.info(`Vuelto: ${formatCurrency(data.payment_summary.change)}`)
       }
       const paymentId = data.payment?.id
-      if (paymentId && !openPaymentPdfInNewTab(paymentId)) {
-        setPdfFallback(paymentId)
+      const paymentCode = data.payment?.code
+      if (paymentId) {
+        setPdfPaymentId(paymentId)
+        setPdfPaymentCode(paymentCode ?? null)
       }
       const newDue = Number(data.order?.total_due ?? 0)
       setPayAmount(newDue > 0 ? String(newDue) : '')
@@ -308,7 +312,10 @@ export function TransactionOrderDrawer({
                                     size="sm"
                                     variant="ghost"
                                     className="h-7 px-2"
-                                    onClick={() => openPaymentPdfInNewTab(p.id)}
+                                    onClick={() => {
+                                      setPdfPaymentId(p.id)
+                                      setPdfPaymentCode(p.code ?? null)
+                                    }}
                                   >
                                     <FileText className="h-3.5 w-3.5" />
                                     PDF
@@ -339,16 +346,9 @@ export function TransactionOrderDrawer({
               )}
             </div>
 
-            {pdfFallback && (
+            {pdfPaymentId && (
               <WorkflowAlert variant="info">
-                Pago registrado.{' '}
-                <button
-                  type="button"
-                  className="font-semibold underline"
-                  onClick={() => openPaymentPdfInNewTab(pdfFallback)}
-                >
-                  Abrir comprobante PDF
-                </button>
+                Pago registrado. El comprobante está listo para imprimir o descargar.
               </WorkflowAlert>
             )}
 
@@ -438,6 +438,18 @@ export function TransactionOrderDrawer({
           </ModalFooter>
         </div>
       </Modal>
+
+      <PaymentPdfPreviewModal
+        open={Boolean(pdfPaymentId)}
+        onOpenChange={(next) => {
+          if (!next) {
+            setPdfPaymentId(null)
+            setPdfPaymentCode(null)
+          }
+        }}
+        paymentId={pdfPaymentId}
+        paymentCode={pdfPaymentCode}
+      />
     </>
   )
 }

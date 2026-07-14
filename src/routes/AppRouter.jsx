@@ -27,12 +27,11 @@ import {
 } from '@/pages/analisis'
 import {
   CashesPage,
+  CashAuditPage,
+  CashCategoriesPage,
   CashFlowPage,
-  InflowsPage,
+  CashMovementsPage,
   OpenCashPage,
-  OutflowsPage,
-  TypeInflowsPage,
-  TypeOutflowsPage,
 } from '@/pages/caja'
 import {
   OrderDetailPage,
@@ -185,11 +184,14 @@ const router = createBrowserRouter([
       // Caja
       { path: 'caja/cajas', element: <CashesPage /> },
       { path: 'caja/apertura', element: <OpenCashPage /> },
+      { path: 'caja/movimientos', element: <CashMovementsPage /> },
       { path: 'caja/flujo', element: <CashFlowPage /> },
-      { path: 'caja/ingresos', element: <InflowsPage /> },
-      { path: 'caja/egresos', element: <OutflowsPage /> },
-      { path: 'caja/tipos-ingreso', element: <TypeInflowsPage /> },
-      { path: 'caja/tipos-egreso', element: <TypeOutflowsPage /> },
+      { path: 'caja/arqueo', element: <CashAuditPage /> },
+      { path: 'caja/categorias', element: <CashCategoriesPage /> },
+      { path: 'caja/ingresos', element: <Navigate to={ROUTES.CASH_MOVEMENTS} replace /> },
+      { path: 'caja/egresos', element: <Navigate to={ROUTES.CASH_MOVEMENTS} replace /> },
+      { path: 'caja/tipos-ingreso', element: <Navigate to={ROUTES.CASH_CATEGORIES} replace /> },
+      { path: 'caja/tipos-egreso', element: <Navigate to={ROUTES.CASH_CATEGORIES} replace /> },
       // Recepción y atención
       { path: 'recepcion/pacientes', element: <PatientsPage /> },
       { path: 'recepcion/crear-orden', element: <OrderReceptionPage /> },

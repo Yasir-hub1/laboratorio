@@ -46,8 +46,9 @@ export const laboratoryApi = {
   // ——— Flujo de caja ———
   getCashFlowOverview: (params) => request('get', '/cash-flow/overview', null, { params }),
   getCashFlowGeneral: (params) => request('get', '/cash-flow/general', null, { params }),
-  getCashFlowDetail: (openingCashId) =>
-    request('get', `/cash-flow/detail/${openingCashId}`),
+  getCashFlowDetail: (openingCashId, params) =>
+    request('get', `/cash-flow/detail/${openingCashId}`, null, { params }),
+  getCashMovementFilters: () => request('get', '/cash-flow/movement-filters'),
 
   // ——— Seguros ———
   getInsurances: (params) => listRequest('/insurances', params),
@@ -184,8 +185,12 @@ export const laboratoryApi = {
   // ——— Caja ———
   getTypeInflows: (params) => listRequest('/type-inflows', params),
   createTypeInflow: (body) => request('post', '/type-inflows', body),
+  updateTypeInflow: (id, body) => request('put', `/type-inflows/${id}`, body),
+  deleteTypeInflow: (id) => request('delete', `/type-inflows/${id}`),
   getTypeOutflows: (params) => listRequest('/type-outflows', params),
   createTypeOutflow: (body) => request('post', '/type-outflows', body),
+  updateTypeOutflow: (id, body) => request('put', `/type-outflows/${id}`, body),
+  deleteTypeOutflow: (id) => request('delete', `/type-outflows/${id}`),
 
   getCashes: (params) => listRequest('/cashes', params),
   getMyCashes: () => request('get', '/cashes/my-cashes'),
@@ -250,8 +255,12 @@ export const laboratoryApi = {
   getOrderSamples: (id) => request('get', `/laboratory-orders/${id}/samples`),
   getOrderPdf: (id) =>
     httpClient.get(`/laboratory-orders/${id}/pdf`, { responseType: 'blob' }),
+  /** Datos JSON para generar el comprobante de orden en frontend. */
+  getOrderPdfData: (id) => request('get', `/laboratory-orders/${id}/pdf-data`),
   getOrderResultsPdf: (id) =>
     httpClient.get(`/laboratory-orders/${id}/results-pdf`, { responseType: 'blob' }),
+  getOrderResultsPdfData: (id) =>
+    request('get', `/laboratory-orders/${id}/results-pdf-data`),
 
   // ——— Muestras de laboratorio ———
   getLaboratorySamples: (params) => listRequest('/laboratory-samples', params),
@@ -277,6 +286,8 @@ export const laboratoryApi = {
     request('post', `/payments/${id}/annular`, annulmentBody(body)),
   getPaymentPdf: (id) =>
     httpClient.get(`/payments/${id}/pdf`, { responseType: 'blob' }),
+  /** Datos JSON para generar el comprobante de pago en frontend. */
+  getPaymentPdfData: (id) => request('get', `/payments/${id}/pdf-data`),
 
   // ——— Transacciones ———
   getTransactionsContext: (params) => listRequest('/transactions/context', params),

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Download, Loader2, Printer } from 'lucide-react'
 import { toast } from 'sonner'
+import { OrderPdfPreviewModal } from '@/components/common/OrderPdfPreviewModal'
 import { Modal, ModalFooter, Button } from '@/components/ui'
 import { laboratoryApi } from '@/services/laboratoryApi'
 import {
@@ -32,6 +33,40 @@ export function PdfPreviewModal({
   orderCode,
   footerExtra,
 }) {
+  // Comprobante de orden: plantilla HTML + pdf-data en frontend
+  if (pdfType === 'order') {
+    return (
+      <OrderPdfPreviewModal
+        open={open}
+        onOpenChange={onOpenChange}
+        orderId={orderId}
+        orderCode={orderCode}
+        footerExtra={footerExtra}
+      />
+    )
+  }
+
+  return (
+    <ServerBlobPdfPreviewModal
+      open={open}
+      onOpenChange={onOpenChange}
+      orderId={orderId}
+      pdfType={pdfType}
+      orderCode={orderCode}
+      footerExtra={footerExtra}
+    />
+  )
+}
+
+/** Fallback legacy: PDF binario del servidor (p. ej. resultados staff). */
+function ServerBlobPdfPreviewModal({
+  open,
+  onOpenChange,
+  orderId,
+  pdfType = 'results',
+  orderCode,
+  footerExtra,
+}) {
   const [loading, setLoading] = useState(false)
   const [blob, setBlob] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -54,10 +89,7 @@ export function PdfPreviewModal({
     setLoading(true)
     clearPreview()
     try {
-      const response =
-        pdfType === 'results'
-          ? await laboratoryApi.getOrderResultsPdf(orderId)
-          : await laboratoryApi.getOrderPdf(orderId)
+      const response = await laboratoryApi.getOrderResultsPdf(orderId)
       const pdfBlob = await blobFromPdfResponse(response)
       const url = URL.createObjectURL(pdfBlob)
       blobRef.current = pdfBlob
@@ -70,7 +102,7 @@ export function PdfPreviewModal({
     } finally {
       setLoading(false)
     }
-  }, [orderId, pdfType, onOpenChange, clearPreview])
+  }, [orderId, onOpenChange, clearPreview])
 
   useEffect(() => {
     if (!open) {

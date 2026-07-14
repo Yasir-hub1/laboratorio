@@ -40,11 +40,32 @@ function normalizeGeneral(data) {
 
   return {
     total_inflows:
-      Number(summary.total_inflows ?? summary.inflows ?? data.total_inflows ?? 0) || 0,
+      Number(
+        summary.total_inflow ??
+          summary.total_inflows ??
+          summary.inflows ??
+          data.total_inflows ??
+          0,
+      ) || 0,
     total_outflows:
-      Number(summary.total_outflows ?? summary.outflows ?? data.total_outflows ?? 0) || 0,
-    balance: Number(summary.balance ?? summary.net_balance ?? data.balance ?? 0) || 0,
+      Number(
+        summary.total_outflow ??
+          summary.total_outflows ??
+          summary.outflows ??
+          data.total_outflows ??
+          0,
+      ) || 0,
+    balance:
+      Number(
+        summary.total_current_amount ??
+          summary.balance ??
+          summary.net_balance ??
+          data.balance ??
+          0,
+      ) || 0,
+    total_initial_amount: Number(summary.total_initial_amount ?? 0) || 0,
     movements: data.movements ?? data.openings ?? data.items ?? data.data ?? [],
+    openings: data.openings ?? null,
     breakdown_inflows: data.inflows_by_type ?? data.inflow_breakdown ?? [],
     breakdown_outflows: data.outflows_by_type ?? data.outflow_breakdown ?? [],
   }

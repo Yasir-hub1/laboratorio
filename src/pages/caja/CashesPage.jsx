@@ -13,11 +13,7 @@ import { Badge, Button, Card, DataTable, Modal, ModalFooter, Select } from '@/co
 import { Input } from '@/components/ui/Input'
 import { laboratoryApi } from '@/services/laboratoryApi'
 import { buildCashPayload } from '@/utils/apiPayload'
-import {
-  cashAssignedUsers,
-  cashDisplayName,
-  resolveCashId,
-} from '@/utils/cashHelpers'
+import { cashDisplayName, resolveCashId } from '@/utils/cashHelpers'
 import { isActiveStatus } from '@/utils/statusHelpers'
 import { toastApiError, toastApiSuccess } from '@/utils/toastApi'
 
@@ -87,16 +83,6 @@ export function CashesPage() {
         cell: ({ row }) => row.original.branch?.name ?? '—',
       },
       {
-        id: 'users',
-        header: 'Usuarios',
-        cell: ({ row }) => {
-          const users = cashAssignedUsers(row.original)
-          return users.length > 0
-            ? users.map((u) => u.name ?? u.email).filter(Boolean).join(', ')
-            : '—'
-        },
-      },
-      {
         accessorKey: 'status',
         header: 'Estado',
         cell: ({ row }) => {
@@ -147,7 +133,7 @@ export function CashesPage() {
       <PageHeader
         // phase="Fase 7"
         title="Cajas"
-        description="Mantenimiento de cajas por sucursal y usuarios asignados."
+        description="Mantenimiento de cajas por sucursal. La asignación de usuarios se gestiona en Usuarios."
         actions={
           <Button onClick={openCreate} disabled={!filterBranchId}>
             <Plus className="h-4 w-4" />

@@ -15,22 +15,44 @@ import { useIndexQuery } from '@/hooks/useIndexQuery'
 import { formatCurrency, formatDateTime } from '@/utils/apiHelpers'
 import {
   cashDisplayName,
-  mergeActiveOpeningDisplay,
-  parseCashOpeningStatus,
+  resolveCashId,
+  unwrapCashes,
 } from '@/utils/cashHelpers'
 import { ROUTES } from '@/utils/constants'
 import { storage } from '@/utils/storage'
-import { toastApiError } from '@/utils/toastApi'
+import { toastApiError, toastApiSuccess } from '@/utils/toastApi'
+import { cn } from '@/utils/cn'
+
+function getActiveOpening(cash) {
+  return (
+    cash?.active_opening ??
+    cash?.opening_cash ??
+    cash?.current_opening ??
+    cash?.opening ??
+    null
+  )
+}
 
 function isOpeningActive(record) {
-  return record.is_open || record.status === 'open' || record.status === 1 || !record.closed_at
+  if (!record) return false
+  if (record.closed_at || record.close_date) return false
+  if (record.is_open === false || record.is_open === 0 || record.status === 'closed') {
+    return false
+  }
+  return (
+    record.is_open === true ||
+    record.is_open === 1 ||
+    record.status === 'open' ||
+    record.status === 1 ||
+    true
+  )
 }
 
 function AmountStat({ label, value, icon: Icon, accentClass }) {
   return (
     <div className="rounded-lg border border-border bg-surface-muted/40 p-3">
       <div className="mb-1 flex items-center gap-1.5 text-xs text-muted">
-        {Icon && <Icon className={`h-3.5 w-3.5 ${accentClass ?? ''}`} aria-hidden />}
+        {Icon && <Icon className={cn('h-3.5 w-3.5', accentClass)} aria-hidden />}
         <span>{label}</span>
       </div>
       <p className="text-lg font-semibold text-foreground">
@@ -41,72 +63,119 @@ function AmountStat({ label, value, icon: Icon, accentClass }) {
 }
 
 export function OpenCashPage() {
-  const { setOpeningCash, cashId, cashName, branchName } = useAuth()
-  const index = useIndexQuery(laboratoryApi.getOpeningCashes)
+  const { setOpeningCash, setCashContext, openingCashId, cashId, cashName, branchName } =
+    useAuth()
+  const index = useIndexQuery(laboratoryApi.getOpeningCashes, {
+    initialOrderBy: 'openning_date',
+    initialOrderDir: 'desc',
+  })
+
+  const [myCashes, setMyCashes] = useState([])
+  const [loadingCashes, setLoadingCashes] = useState(true)
+  const [sessionDetail, setSessionDetail] = useState(null)
+  const [loadingDetail, setLoadingDetail] = useState(false)
+
+  const [openModalCash, setOpenModalCash] = useState(null)
   const [openingAmount, setOpeningAmount] = useState('')
-  const [closingAmount, setClosingAmount] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [cashStatus, setCashStatus] = useState(null)
-  const [loadingStatus, setLoadingStatus] = useState(false)
   const [closeModalOpen, setCloseModalOpen] = useState(false)
+  const [closingTarget, setClosingTarget] = useState(null)
+  const [closingAmount, setClosingAmount] = useState('')
+  const [closeNote, setCloseNote] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const storedOpeningId = storage.getOpeningCashId()
-  const sessionCashId = cashId ?? storage.getCashId()
-
-  const activeOpening = useMemo(() => {
-    if (storedOpeningId) {
-      const match = index.items.find((r) => String(r.id) === String(storedOpeningId))
-      if (match && isOpeningActive(match)) return match
-    }
-    return index.items.find(isOpeningActive) ?? null
-  }, [index.items, storedOpeningId])
-
-  const hasActiveOpening = Boolean(
-    cashStatus?.isOpen || (activeOpening && isOpeningActive(activeOpening)),
+  const [activeOpeningId, setActiveOpeningId] = useState(
+    () => openingCashId || storage.getOpeningCashId(),
   )
 
-  const openingDisplay = useMemo(
-    () => mergeActiveOpeningDisplay(activeOpening, cashStatus),
-    [activeOpening, cashStatus],
-  )
+  const storedOpeningId = activeOpeningId || storage.getOpeningCashId()
 
-  const loadCashStatus = useCallback(async () => {
-    if (!sessionCashId) {
-      setCashStatus(null)
-      return
-    }
-
-    setLoadingStatus(true)
+  const loadMyCashes = useCallback(async () => {
+    setLoadingCashes(true)
     try {
-      const raw = await laboratoryApi.getCashStatus(sessionCashId)
-      setCashStatus(parseCashOpeningStatus(raw))
+      const list = unwrapCashes(await laboratoryApi.getMyCashes())
+      setMyCashes(list)
     } catch (err) {
       toastApiError(err)
-      setCashStatus(null)
+      setMyCashes([])
     } finally {
-      setLoadingStatus(false)
+      setLoadingCashes(false)
     }
-  }, [sessionCashId])
+  }, [])
+
+  const loadSessionDetail = useCallback(async (openingId) => {
+    if (!openingId) {
+      setSessionDetail(null)
+      return
+    }
+    setLoadingDetail(true)
+    try {
+      const data = await laboratoryApi.getCashFlowDetail(openingId)
+      setSessionDetail(data)
+    } catch (err) {
+      toastApiError(err)
+      setSessionDetail(null)
+    } finally {
+      setLoadingDetail(false)
+    }
+  }, [])
 
   useEffect(() => {
-    loadCashStatus()
-  }, [loadCashStatus, index.items])
+    loadMyCashes()
+  }, [loadMyCashes])
 
   useEffect(() => {
-    const openingId = openingDisplay.id ?? activeOpening?.id
-    if (openingId && hasActiveOpening) {
-      storage.setOpeningCashId(String(openingId))
-      setOpeningCash(String(openingId))
+    loadSessionDetail(storedOpeningId)
+  }, [storedOpeningId, loadSessionDetail])
+
+  const activeSession = useMemo(() => {
+    if (!storedOpeningId) return null
+    for (const cash of myCashes) {
+      const opening = getActiveOpening(cash)
+      if (opening && String(opening.id) === String(storedOpeningId) && isOpeningActive(opening)) {
+        return { cash, opening }
+      }
     }
-  }, [activeOpening, hasActiveOpening, openingDisplay.id, setOpeningCash])
+    const fromDetail = sessionDetail?.opening ?? sessionDetail?.opening_cash
+    if (fromDetail && isOpeningActive(fromDetail)) {
+      return {
+        cash: sessionDetail?.cash ?? { id: cashId, name: cashName },
+        opening: fromDetail,
+      }
+    }
+    return null
+  }, [myCashes, storedOpeningId, sessionDetail, cashId, cashName])
+
+  const kpis = useMemo(() => {
+    const opening = activeSession?.opening
+    const d = sessionDetail
+    return {
+      initial: Number(d?.initial_amount ?? opening?.initial_amount ?? NaN),
+      inflow: Number(d?.total_inflow ?? opening?.total_inflow ?? NaN),
+      outflow: Number(d?.total_outflow ?? opening?.total_outflow ?? NaN),
+      current: Number(d?.current_amount ?? opening?.current_amount ?? NaN),
+    }
+  }, [activeSession, sessionDetail])
 
   const columns = useMemo(
     () => [
-      // { accessorKey: 'id', header: 'ID' },
+      {
+        id: 'caja',
+        header: 'Caja',
+        cell: ({ row }) =>
+          row.original.cash?.name ??
+          row.original.cash_name ??
+          `Caja #${row.original.cash_id ?? '—'}`,
+      },
       {
         accessorKey: 'opened_at',
         header: 'Apertura',
-        cell: ({ row }) => formatDateTime(row.original.opened_at ?? row.original.created_at),
+        cell: ({ row }) =>
+          formatDateTime(
+            row.original.opened_at ??
+              row.original.openning_date ??
+              row.original.opening_date ??
+              row.original.created_at,
+          ),
       },
       {
         accessorKey: 'initial_amount',
@@ -136,10 +205,30 @@ export function OpenCashPage() {
     [],
   )
 
+  const activateSession = (cash, opening) => {
+    const cid = resolveCashId(cash)
+    if (!cid || !opening?.id) {
+      toast.error('No se pudo activar la sesión')
+      return
+    }
+    setCashContext({ cashId: cid, cashName: cashDisplayName(cash) })
+    storage.setOpeningCashId(String(opening.id))
+    setOpeningCash(String(opening.id))
+    setActiveOpeningId(String(opening.id))
+    toastApiSuccess(`Sesión activa: ${cashDisplayName(cash)}`)
+    loadSessionDetail(String(opening.id))
+  }
+
+  const openOpenModal = (cash) => {
+    setOpenModalCash(cash)
+    setOpeningAmount('')
+  }
+
   const handleOpen = async (e) => {
     e.preventDefault()
-    if (!sessionCashId) {
-      toast.error('Selecciona una caja en el inicio de sesión')
+    const cid = resolveCashId(openModalCash)
+    if (!cid) {
+      toast.error('Caja inválida')
       return
     }
     if (!openingAmount) {
@@ -149,16 +238,19 @@ export function OpenCashPage() {
     setSubmitting(true)
     try {
       const result = await laboratoryApi.openCash({
-        cash_id: sessionCashId,
+        cash_id: cid,
         initial_amount: Number(openingAmount),
       })
+      setCashContext({ cashId: cid, cashName: cashDisplayName(openModalCash) })
       if (result?.id) {
         storage.setOpeningCashId(String(result.id))
         setOpeningCash(String(result.id))
+        setActiveOpeningId(String(result.id))
       }
-      toast.success('Caja abierta')
+      toastApiSuccess('Caja abierta')
+      setOpenModalCash(null)
       setOpeningAmount('')
-      await Promise.all([index.reload(), loadCashStatus()])
+      await Promise.all([loadMyCashes(), index.reload()])
     } catch (err) {
       toastApiError(err)
     } finally {
@@ -166,16 +258,19 @@ export function OpenCashPage() {
     }
   }
 
-  const openCloseModal = () => {
-    setClosingAmount(
-      openingDisplay.currentAmount != null ? String(openingDisplay.currentAmount) : '',
+  const openCloseModal = (cash, opening) => {
+    const expected = Number(
+      sessionDetail?.current_amount ?? opening?.current_amount ?? NaN,
     )
+    setClosingTarget({ cash, opening })
+    setClosingAmount(Number.isFinite(expected) ? String(expected) : '')
+    setCloseNote('')
     setCloseModalOpen(true)
   }
 
   const handleClose = async (e) => {
     e.preventDefault()
-    const openingId = openingDisplay.id ?? activeOpening?.id ?? storedOpeningId
+    const openingId = closingTarget?.opening?.id ?? storedOpeningId
     if (!openingId) {
       toast.error('No hay caja abierta para cerrar')
       return
@@ -188,13 +283,20 @@ export function OpenCashPage() {
     try {
       await laboratoryApi.closeCash(openingId, {
         final_amount: Number(closingAmount),
+        close_note: closeNote || undefined,
       })
-      storage.setOpeningCashId('')
-      setOpeningCash('')
-      toast.success('Caja cerrada')
-      setClosingAmount('')
+      if (String(storedOpeningId) === String(openingId)) {
+        storage.setOpeningCashId('')
+        setOpeningCash('')
+        setActiveOpeningId('')
+        setSessionDetail(null)
+      }
+      toastApiSuccess('Caja cerrada')
       setCloseModalOpen(false)
-      await Promise.all([index.reload(), loadCashStatus()])
+      setClosingTarget(null)
+      setClosingAmount('')
+      setCloseNote('')
+      await Promise.all([loadMyCashes(), index.reload()])
     } catch (err) {
       toastApiError(err)
     } finally {
@@ -202,122 +304,181 @@ export function OpenCashPage() {
     }
   }
 
-  if (index.loading && index.items.length === 0) return <LoadingScreen />
+  if ((loadingCashes || index.loading) && myCashes.length === 0 && index.items.length === 0) {
+    return <LoadingScreen />
+  }
+
+  const expectedClose = Number(
+    sessionDetail?.current_amount ?? closingTarget?.opening?.current_amount ?? NaN,
+  )
+  const countedClose = Number(closingAmount)
+  const closeDiff =
+    Number.isFinite(expectedClose) && Number.isFinite(countedClose)
+      ? countedClose - expectedClose
+      : null
 
   return (
     <AnimatedPage>
       <PageHeader
         title="Apertura y cierre de caja"
-        description="Usa la caja seleccionada al iniciar sesión. Puedes cambiarla en el menú de sesión."
+        description="Gestiona tus cajas asignadas, activa la sesión del turno y cierra al finalizar."
         actions={
           <Button variant="secondary" asChild>
-            <Link to={ROUTES.SELECT_CASH}>Cambiar caja</Link>
+            <Link to={ROUTES.SELECT_CASH}>Cambiar caja (login)</Link>
           </Button>
         }
       />
 
-      {!sessionCashId ? (
-        <Card className="mb-6 p-4 text-sm text-amber-800">
-          No hay caja en sesión.{' '}
-          <Link to={ROUTES.SELECT_CASH} className="link-primary font-medium">
-            Selecciona una caja
-          </Link>{' '}
-          para continuar.
-        </Card>
-      ) : (
-        <div className="mb-6 rounded-lg border border-border bg-surface-muted/40 px-4 py-3 text-sm">
-          <p>
-            <span className="text-muted">Caja en sesión:</span>{' '}
-            <span className="font-medium">{cashName ?? `Caja #${sessionCashId}`}</span>
-          </p>
-          {branchName && (
-            <p className="text-muted">
-              Sucursal: <span className="text-foreground">{branchName}</span>
-            </p>
-          )}
-        </div>
+      {branchName && (
+        <p className="mb-4 text-sm text-muted">
+          Sucursal: <span className="text-foreground">{branchName}</span>
+        </p>
       )}
 
-      {sessionCashId && hasActiveOpening && (
+      {activeSession && (
         <Card className="mb-6 border-emerald-200/80 bg-emerald-50/30">
           <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Wallet className="h-4 w-4 text-emerald-600" aria-hidden />
-                Caja aperturada
+                Sesión activa · {cashDisplayName(activeSession.cash)}
               </CardTitle>
               <p className="mt-1 text-sm text-muted">
-                {/* Apertura #{openingDisplay.id ?? '—'} */}
-                {openingDisplay.openedAt &&
-                  ` · ${formatDateTime(openingDisplay.openedAt)}`}
+                {(activeSession.opening.opened_at ||
+                  activeSession.opening.openning_date ||
+                  activeSession.opening.created_at) &&
+                  formatDateTime(
+                    activeSession.opening.opened_at ??
+                      activeSession.opening.openning_date ??
+                      activeSession.opening.created_at,
+                  )}
               </p>
             </div>
             <Badge variant="success">Activa</Badge>
           </CardHeader>
 
-          {loadingStatus ? (
+          {loadingDetail ? (
             <p className="px-6 pb-4 text-sm text-muted">Actualizando montos…</p>
           ) : (
             <div className="grid gap-3 px-6 pb-4 sm:grid-cols-2 xl:grid-cols-4">
-              <AmountStat label="Monto inicial" value={openingDisplay.initialAmount} />
               <AmountStat
-                label="Monto actual"
-                value={openingDisplay.currentAmount}
-                icon={Wallet}
-                accentClass="text-emerald-600"
+                label="Monto inicial"
+                value={Number.isFinite(kpis.initial) ? kpis.initial : null}
               />
               <AmountStat
-                label="Total ingresos"
-                value={openingDisplay.totalInflow}
+                label="Ingresos"
+                value={Number.isFinite(kpis.inflow) ? kpis.inflow : null}
                 icon={ArrowDownLeft}
                 accentClass="text-emerald-600"
               />
               <AmountStat
-                label="Total salidas"
-                value={openingDisplay.totalOutflow}
+                label="Egresos"
+                value={Number.isFinite(kpis.outflow) ? kpis.outflow : null}
                 icon={ArrowUpRight}
                 accentClass="text-red-500"
+              />
+              <AmountStat
+                label="Saldo"
+                value={Number.isFinite(kpis.current) ? kpis.current : null}
+                icon={Wallet}
+                accentClass="text-emerald-600"
               />
             </div>
           )}
 
-          <div className="border-t border-emerald-200/60 px-6 py-4">
-            <Button type="button" variant="danger" onClick={openCloseModal} disabled={loadingStatus}>
+          <div className="flex flex-wrap gap-2 border-t border-emerald-200/60 px-6 py-4">
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => openCloseModal(activeSession.cash, activeSession.opening)}
+              disabled={loadingDetail}
+            >
               <Lock className="h-4 w-4" aria-hidden />
               Cerrar caja
+            </Button>
+            <Button type="button" variant="secondary" asChild>
+              <Link to={ROUTES.CASH_MOVEMENTS}>Ver movimientos</Link>
             </Button>
           </div>
         </Card>
       )}
 
-      {sessionCashId && !hasActiveOpening && (
-        <Card className="mb-6 max-w-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Unlock className="h-4 w-4 text-emerald-600" />
-              Abrir caja
-            </CardTitle>
-          </CardHeader>
-          <form onSubmit={handleOpen} className="space-y-4 px-6 pb-6">
-            <p className="text-sm text-muted">
-              {cashDisplayName({ id: sessionCashId, name: cashName })}
-            </p>
-            <Input
-              label="Monto inicial (Bs.)"
-              name="initial_amount"
-              type="number"
-              min="0"
-              step="0.01"
-              value={openingAmount}
-              onChange={(e) => setOpeningAmount(e.target.value)}
-              required
+      <div className="mb-6">
+        <h2 className="mb-3 text-sm font-medium text-foreground">Mis cajas</h2>
+        {myCashes.length === 0 ? (
+          <Card>
+            <EmptyState
+              title="Sin cajas asignadas"
+              description="Pide a un administrador que te asigne una caja en Usuarios."
             />
-            <Button type="submit" disabled={submitting}>
-              Abrir caja
-            </Button>
-          </form>
-        </Card>
-      )}
+          </Card>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {myCashes.map((cash) => {
+              const cid = resolveCashId(cash)
+              const opening = getActiveOpening(cash)
+              const open = isOpeningActive(opening)
+              const isCurrent =
+                open &&
+                storedOpeningId &&
+                opening?.id != null &&
+                String(opening.id) === String(storedOpeningId)
+
+              return (
+                <Card key={cid} className={cn(isCurrent && 'ring-2 ring-emerald-400/60')}>
+                  <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                    <div>
+                      <CardTitle className="text-base">{cashDisplayName(cash)}</CardTitle>
+                      <p className="mt-1 text-xs text-muted">
+                        {open
+                          ? `Abierta · ${formatCurrency(opening?.current_amount ?? opening?.initial_amount)}`
+                          : 'Cerrada'}
+                      </p>
+                    </div>
+                    <Badge variant={open ? 'success' : 'default'}>
+                      {open ? 'Abierta' : 'Cerrada'}
+                    </Badge>
+                  </CardHeader>
+                  <div className="flex flex-wrap gap-2 px-6 pb-6">
+                    {!open && (
+                      <Button type="button" size="sm" onClick={() => openOpenModal(cash)}>
+                        <Unlock className="h-3.5 w-3.5" />
+                        Abrir
+                      </Button>
+                    )}
+                    {open && !isCurrent && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => activateSession(cash, opening)}
+                      >
+                        Usar sesión
+                      </Button>
+                    )}
+                    {open && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        onClick={() => openCloseModal(cash, opening)}
+                      >
+                        <Lock className="h-3.5 w-3.5" />
+                        Cerrar
+                      </Button>
+                    )}
+                    {isCurrent && (
+                      <Badge variant="success" className="self-center">
+                        En uso
+                      </Badge>
+                    )}
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       <Card>
         <CardHeader>
@@ -333,28 +494,76 @@ export function OpenCashPage() {
             columns={columns}
             data={index.items}
             serverPagination={index.serverPagination}
-            showRowNumbers={true}
+            showRowNumbers
           />
         )}
       </Card>
 
       <Modal
+        open={Boolean(openModalCash)}
+        onOpenChange={(open) => {
+          if (!open) setOpenModalCash(null)
+        }}
+        title="Abrir caja"
+        description={openModalCash ? cashDisplayName(openModalCash) : undefined}
+      >
+        <form onSubmit={handleOpen} className="space-y-4">
+          <Input
+            label="Monto inicial (Bs.)"
+            name="initial_amount"
+            type="number"
+            min="0"
+            step="0.01"
+            value={openingAmount}
+            onChange={(e) => setOpeningAmount(e.target.value)}
+            required
+          />
+          <ModalFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setOpenModalCash(null)}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Abriendo…' : 'Abrir caja'}
+            </Button>
+          </ModalFooter>
+        </form>
+      </Modal>
+
+      <Modal
         open={closeModalOpen}
         onOpenChange={setCloseModalOpen}
         title="Cerrar caja"
-        description="Confirma el monto final de la caja. Se precarga con el monto actual del sistema."
+        description="El monto final es el contado físico. Compáralo con el saldo esperado del sistema."
       >
         <form onSubmit={handleClose} className="space-y-4">
           <div className="rounded-lg border border-border bg-surface-muted/40 p-3 text-sm">
-            <p className="text-muted">Monto actual en sistema</p>
+            <p className="text-muted">Esperado (sistema)</p>
             <p className="text-lg font-semibold">
-              {openingDisplay.currentAmount != null
-                ? formatCurrency(openingDisplay.currentAmount)
-                : '—'}
+              {Number.isFinite(expectedClose) ? formatCurrency(expectedClose) : '—'}
             </p>
+            {closeDiff != null && (
+              <p
+                className={cn(
+                  'mt-1 text-xs font-medium',
+                  closeDiff === 0
+                    ? 'text-emerald-600'
+                    : closeDiff > 0
+                      ? 'text-amber-600'
+                      : 'text-red-600',
+                )}
+              >
+                Diferencia: {formatCurrency(closeDiff)}{' '}
+                ({closeDiff === 0 ? 'Cuadrado' : closeDiff > 0 ? 'Sobrante' : 'Faltante'})
+              </p>
+            )}
           </div>
           <Input
-            label="Monto final / arqueo (Bs.)"
+            label="Monto final / contado (Bs.)"
             name="final_amount"
             type="number"
             min="0"
@@ -362,6 +571,12 @@ export function OpenCashPage() {
             value={closingAmount}
             onChange={(e) => setClosingAmount(e.target.value)}
             required
+          />
+          <Input
+            label="Nota de cierre (opcional)"
+            name="close_note"
+            value={closeNote}
+            onChange={(e) => setCloseNote(e.target.value)}
           />
           <ModalFooter>
             <Button

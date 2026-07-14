@@ -52,10 +52,17 @@ export const ROUTES = {
   CASHES: '/caja/cajas',
   CASH_FLOW: '/caja/flujo',
   OPEN_CASH: '/caja/apertura',
-  INFLOWS: '/caja/ingresos',
-  OUTFLOWS: '/caja/egresos',
-  TYPE_INFLOWS: '/caja/tipos-ingreso',
-  TYPE_OUTFLOWS: '/caja/tipos-egreso',
+  CASH_MOVEMENTS: '/caja/movimientos',
+  CASH_AUDIT: '/caja/arqueo',
+  CASH_CATEGORIES: '/caja/categorias',
+  /** @deprecated → CASH_MOVEMENTS */
+  INFLOWS: '/caja/movimientos',
+  /** @deprecated → CASH_MOVEMENTS */
+  OUTFLOWS: '/caja/movimientos',
+  /** @deprecated → CASH_CATEGORIES */
+  TYPE_INFLOWS: '/caja/categorias',
+  /** @deprecated → CASH_CATEGORIES */
+  TYPE_OUTFLOWS: '/caja/categorias',
   // Recepción y atención
   RECEPTION_PATIENTS: '/recepcion/pacientes',
   ORDER_RECEPTION: '/recepcion/crear-orden',
@@ -124,15 +131,17 @@ export const NAV_GROUPS = [
     ],
   },
   {
+    id: 'caja',
     label: 'Caja',
+    shortLabel: 'Caja',
+    icon: 'Wallet',
     items: [
-      { to: ROUTES.CASHES, label: 'Cajas', icon: 'Landmark' },
       { to: ROUTES.OPEN_CASH, label: 'Apertura / Cierre', icon: 'Wallet' },
+      { to: ROUTES.CASH_MOVEMENTS, label: 'Movimientos', icon: 'ArrowLeftRight' },
       { to: ROUTES.CASH_FLOW, label: 'Flujo de caja', icon: 'TrendingUp' },
-      { to: ROUTES.INFLOWS, label: 'Ingresos', icon: 'ArrowDownLeft' },
-      { to: ROUTES.OUTFLOWS, label: 'Egresos', icon: 'ArrowUpRight' },
-      { to: ROUTES.TYPE_INFLOWS, label: 'Tipos ingreso', icon: 'Tags' },
-      { to: ROUTES.TYPE_OUTFLOWS, label: 'Tipos egreso', icon: 'Tags' },
+      { to: ROUTES.CASH_AUDIT, label: 'Arqueo', icon: 'Scale' },
+      { to: ROUTES.CASHES, label: 'Cajas', icon: 'Landmark' },
+      { to: ROUTES.CASH_CATEGORIES, label: 'Categorías', icon: 'Tags' },
     ],
   },
   {
@@ -177,7 +186,7 @@ export const TAB_BAR_ITEMS = [
   },
   {
     id: 'cash',
-    to: ROUTES.CASH_FLOW,
+    to: ROUTES.OPEN_CASH,
     label: 'Caja',
     icon: 'Wallet',
     prefixes: ['/caja'],

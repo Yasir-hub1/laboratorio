@@ -216,7 +216,7 @@ export function InsurancePricesPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
           <Input
             label="Buscar análisis"
-            placeholder="Ej. hemo, glucosa…"
+            placeholder="Ej.glucosa…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="sm:max-w-xs"

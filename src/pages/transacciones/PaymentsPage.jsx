@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { PageHeader } from '@/components/common/PageHeader'
 import { AnimatedPage } from '@/components/common/AnimatedPage'
+import { PaymentPdfPreviewModal } from '@/components/common/PaymentPdfPreviewModal'
 import { Badge, Button, Card, DataTable, Input, Select } from '@/components/ui'
 import { useApiList } from '@/hooks/useApiList'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
@@ -12,7 +13,6 @@ import { laboratoryApi } from '@/services/laboratoryApi'
 import { formatCurrency, formatDateTime } from '@/utils/apiHelpers'
 import { ROUTES } from '@/utils/constants'
 import {
-  openPaymentPdfInNewTab,
   paymentRowStatusLabel,
   paymentRowStatusVariant,
 } from '@/utils/transactions'
@@ -21,7 +21,7 @@ import { cn } from '@/utils/cn'
 const actionBtnBase =
   'h-8 w-full min-w-0 shrink-0 gap-1.5 px-2.5 text-xs font-semibold shadow-none sm:w-auto'
 
-function PaymentRowActions({ payment, orderId }) {
+function PaymentRowActions({ payment, orderId, onOpenPdf }) {
   const showPdf = payment.can_export_pdf !== false && Number(payment.status) !== 2
 
   if (!showPdf && !orderId) {
@@ -42,7 +42,7 @@ function PaymentRowActions({ payment, orderId }) {
             actionBtnBase,
             'border border-primary/30 bg-primary/10 text-primary hover:border-primary hover:bg-primary hover:text-primary-foreground',
           )}
-          onClick={() => openPaymentPdfInNewTab(payment.id)}
+          onClick={() => onOpenPdf?.(payment)}
         >
           <FileText className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">PDF</span>
@@ -79,6 +79,7 @@ export function PaymentsPage() {
   const [registeredByFilter, setRegisteredByFilter] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [pdfPayment, setPdfPayment] = useState(null)
 
   const listParams = useMemo(() => {
     const params = {}
@@ -185,6 +186,7 @@ export function PaymentsPage() {
           <PaymentRowActions
             payment={row.original}
             orderId={row.original.order_id ?? row.original.laboratory_order_id}
+            onOpenPdf={(payment) => setPdfPayment(payment)}
           />
         ),
       },
@@ -287,6 +289,15 @@ export function PaymentsPage() {
           showPagination={index.serverPagination.totalRows > 10}
         />
       )}
+
+      <PaymentPdfPreviewModal
+        open={Boolean(pdfPayment?.id)}
+        onOpenChange={(next) => {
+          if (!next) setPdfPayment(null)
+        }}
+        paymentId={pdfPayment?.id}
+        paymentCode={pdfPayment?.code}
+      />
     </AnimatedPage>
   )
 }
