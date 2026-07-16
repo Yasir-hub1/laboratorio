@@ -437,7 +437,7 @@ export function OrdersPage() {
                 error={errors.patient}
               />
               <Link
-                to={ROUTES.RECEPTION_PATIENTS}
+                to={ROUTES.PATIENTS}
                 className="mt-2 inline-block text-xs font-semibold text-muted hover:text-primary"
               >
                 + Crear paciente nuevo

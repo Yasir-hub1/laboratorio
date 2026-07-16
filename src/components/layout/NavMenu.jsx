@@ -233,7 +233,7 @@ function NavGroupSection({
   const hasActive = groupHasActiveItem(pathname, group)
   const GroupIcon = Icons[group.icon] ?? Icons.Folder
   const displayLabel = group.shortLabel ?? group.label
-  const isPrincipal = group.id === 'principal'
+  const isPrincipal = group.id === 'inicio'
   const isSingleItem = group.items.length === 1
 
   if (isPrincipal || isSingleItem) {
@@ -352,7 +352,7 @@ export function NavMenu({
   )
 
   const defaultOpen = useMemo(() => {
-    const ids = new Set(['principal'])
+    const ids = new Set(['inicio'])
     if (activeGroupId) ids.add(activeGroupId)
     return ids
   }, [activeGroupId])
@@ -378,7 +378,7 @@ export function NavMenu({
           return next
         }
         if (variant === 'sidebar') {
-          return new Set([groupId, 'principal'])
+          return new Set([groupId, 'inicio'])
         }
         next.add(groupId)
         return next

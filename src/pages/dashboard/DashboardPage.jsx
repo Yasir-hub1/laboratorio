@@ -55,7 +55,7 @@ const statStyles = {
 
 const quickLinks = [
   { to: ROUTES.ORDER_RECEPTION, label: 'Nueva orden', icon: Plus, highlight: true },
-  { to: ROUTES.ORDER_MANAGEMENT, label: 'Gestionar orden', icon: ClipboardList },
+  { to: ROUTES.ORDER_MANAGEMENT, label: 'Gestión de Órdenes', icon: ClipboardList },
   { to: ROUTES.QUOTATIONS, label: 'Cotizar', icon: FileText },
   { to: ROUTES.PATIENTS, label: 'Pacientes', icon: UserCircle },
   { to: ROUTES.OPEN_CASH, label: 'Caja', icon: Wallet },
