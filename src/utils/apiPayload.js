@@ -17,7 +17,6 @@ export function pickDefined(obj) {
 const GENDER_MAP = {
   M: 'Masculino',
   F: 'Femenino',
-  O: 'Otro',
   masculino: 'Masculino',
   femenino: 'Femenino',
 }
@@ -27,6 +26,15 @@ export function normalizeGender(value) {
   return GENDER_MAP[value] ?? value
 }
 
+/** Pacientes: API espera M | F */
+export function normalizePatientGender(value) {
+  if (!value) return undefined
+  const v = String(value).trim().toUpperCase()
+  if (v === 'M' || v === 'MASCULINO') return 'M'
+  if (v === 'F' || v === 'FEMENINO') return 'F'
+  return undefined
+}
+
 export function buildPatientPayload(form) {
   return pickDefined({
     ci: form.ci,
@@ -34,7 +42,7 @@ export function buildPatientPayload(form) {
     last_name: form.last_name,
     phone: form.phone,
     address: form.address,
-    gender: normalizeGender(form.gender),
+    gender: normalizePatientGender(form.gender),
     birth_date: form.birth_date || undefined,
     email: form.email,
     password: form.password,
