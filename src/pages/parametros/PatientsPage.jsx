@@ -50,7 +50,6 @@ function genderLabel(value) {
   const v = String(value).toLowerCase()
   if (v === 'm' || v === 'masculino') return 'Masculino'
   if (v === 'f' || v === 'femenino') return 'Femenino'
-  if (v === 'o' || v === 'otro') return 'Otro'
   return value
 }
 
@@ -59,8 +58,7 @@ function genderToFormValue(value) {
   const v = String(value).toLowerCase()
   if (v === 'masculino' || v === 'm') return 'M'
   if (v === 'femenino' || v === 'f') return 'F'
-  if (v === 'otro' || v === 'o') return 'O'
-  return value
+  return ''
 }
 
 function rowToForm(row) {
@@ -350,7 +348,6 @@ export function PatientsPage() {
             <option value="">Seleccionar</option>
             <option value="M">Masculino</option>
             <option value="F">Femenino</option>
-            <option value="O">Otro</option>
           </Select>
           <Input
             label="Fecha de nacimiento"

@@ -31,23 +31,45 @@ export const ROUTES = {
   SELECT_ACCESS: '/select-access',
   SELECT_CASH: '/select-cash',
   DASHBOARD: '/dashboard',
-  // Parámetros
-  INSURANCES: '/parametros/seguros',
-  INSURANCE_CATALOG_PRICES: '/parametros/seguros/precios-catalogo',
-  INSURANCE_PRICES: '/parametros/seguros/:id/precios',
-  STAFF: '/parametros/personal',
-  DOCTORS: '/parametros/medicos',
-  SPECIALTIES: '/parametros/especialidades',
-  PATIENTS: '/parametros/pacientes',
-  USERS: '/parametros/usuarios',
-  BRANCHES: '/parametros/sucursales',
-  // Análisis
-  ANALYSES: '/analisis/catalogo',
-  ANALYSIS_SUBGROUPS: '/analisis/catalogo/:analysisId/subgrupos',
-  ANALYSIS_GROUPS: '/analisis/grupos',
-  SAMPLES_CATALOG: '/analisis/muestras',
-  METHODS: '/analisis/metodos',
-  COMPONENTS: '/analisis/componentes',
+  // Empresa
+  USERS: '/empresa/usuarios',
+  BRANCHES: '/empresa/sucursales',
+  // Gestión clínica
+  PATIENTS: '/clinica/pacientes',
+  DOCTORS: '/clinica/medicos',
+  STAFF: '/clinica/personal',
+  SPECIALTIES: '/clinica/especialidades',
+  INSURANCES: '/clinica/seguros',
+  INSURANCE_CATALOG_PRICES: '/clinica/seguros/precios-catalogo',
+  INSURANCE_PRICES: '/clinica/seguros/:id/precios',
+  // Atención
+  ORDER_RECEPTION: '/atencion/crear-orden',
+  QUOTATIONS: '/atencion/cotizaciones',
+  ORDER_MANAGEMENT: '/atencion/gestionar-orden',
+  ORDER_DETAIL: '/atencion/gestionar-orden/:id',
+  /** @deprecated → PATIENTS */
+  RECEPTION_PATIENTS: '/clinica/pacientes',
+  /** @deprecated → ORDER_MANAGEMENT */
+  ORDERS: '/atencion/gestionar-orden',
+  /** @deprecated rutas /clinico/* /laboratorio/* /recepcion/* redirigen aquí */
+  LAB_SAMPLE_RECEPTION: '/atencion/gestionar-orden',
+  LAB_RESULTS_ENTRY: '/atencion/gestionar-orden',
+  LAB_RESULTS_VALIDATION: '/atencion/gestionar-orden',
+  LAB_ORDER_CLOSURE: '/atencion/gestionar-orden',
+  LAB_ORDERS_COMPLETED: '/atencion/gestionar-orden',
+  LAB_ORDERS_ANNULLED: '/atencion/gestionar-orden',
+  SAMPLE_RECEPTION: '/atencion/gestionar-orden',
+  RESULTS: '/atencion/gestionar-orden',
+  // Catálogos
+  ANALYSES: '/catalogos/analisis',
+  ANALYSIS_SUBGROUPS: '/catalogos/analisis/:analysisId/subgrupos',
+  ANALYSIS_GROUPS: '/catalogos/grupos',
+  SAMPLES_CATALOG: '/catalogos/muestras',
+  METHODS: '/catalogos/metodos',
+  COMPONENTS: '/catalogos/componentes',
+  // Cobros
+  PAYMENTS: '/cobros/pagos',
+  TRANSACTION_MANAGEMENT: '/cobros/historial',
   // Caja
   CASHES: '/caja/cajas',
   CASH_FLOW: '/caja/flujo',
@@ -63,26 +85,6 @@ export const ROUTES = {
   TYPE_INFLOWS: '/caja/categorias',
   /** @deprecated → CASH_CATEGORIES */
   TYPE_OUTFLOWS: '/caja/categorias',
-  // Recepción y atención
-  RECEPTION_PATIENTS: '/recepcion/pacientes',
-  ORDER_RECEPTION: '/recepcion/crear-orden',
-  QUOTATIONS: '/recepcion/cotizaciones',
-  ORDER_MANAGEMENT: '/recepcion/gestionar-orden',
-  ORDER_DETAIL: '/recepcion/gestionar-orden/:id',
-  /** @deprecated */
-  ORDERS: '/recepcion/gestionar-orden',
-  /** @deprecated rutas /clinico/* y /laboratorio/* redirigen aquí */
-  LAB_SAMPLE_RECEPTION: '/recepcion/gestionar-orden',
-  LAB_RESULTS_ENTRY: '/recepcion/gestionar-orden',
-  LAB_RESULTS_VALIDATION: '/recepcion/gestionar-orden',
-  LAB_ORDER_CLOSURE: '/recepcion/gestionar-orden',
-  LAB_ORDERS_COMPLETED: '/recepcion/gestionar-orden',
-  LAB_ORDERS_ANNULLED: '/recepcion/gestionar-orden',
-  SAMPLE_RECEPTION: '/recepcion/gestionar-orden',
-  RESULTS: '/recepcion/gestionar-orden',
-  // Transacciones
-  TRANSACTION_MANAGEMENT: '/transacciones/gestionar',
-  PAYMENTS: '/transacciones/pagos',
   // Portal paciente
   PATIENT_LOGIN: '/portal/login',
   PATIENT_PORTAL: '/portal',
@@ -94,40 +96,69 @@ export const ROUTES = {
   NOT_FOUND: '*',
 }
 
+/** Sidebar staff — rutas alineadas a módulos del menú */
 export const NAV_GROUPS = [
   {
-    id: 'principal',
-    label: 'Principal',
-    shortLabel: 'Principal',
-    icon: 'LayoutDashboard',
+    id: 'inicio',
+    label: 'Inicio',
+    shortLabel: 'Inicio',
+    icon: 'Home',
     items: [{ to: ROUTES.DASHBOARD, label: 'Dashboard', icon: 'LayoutDashboard' }],
   },
   {
-    id: 'parametros',
-    label: 'Parámetros',
-    shortLabel: 'Parámetros',
-    icon: 'Settings2',
+    id: 'empresa',
+    label: 'Empresa',
+    shortLabel: 'Empresa',
+    icon: 'Building2',
     items: [
-      { to: ROUTES.INSURANCES, label: 'Seguros', icon: 'Shield' },
-      { to: ROUTES.STAFF, label: 'Personal', icon: 'Users' },
-      { to: ROUTES.DOCTORS, label: 'Médicos', icon: 'Stethoscope' },
-      { to: ROUTES.SPECIALTIES, label: 'Especialidades', icon: 'GraduationCap' },
-      { to: ROUTES.PATIENTS, label: 'Pacientes', icon: 'UserCircle' },
       { to: ROUTES.USERS, label: 'Usuarios', icon: 'UserCog' },
       { to: ROUTES.BRANCHES, label: 'Sucursales', icon: 'Building2' },
     ],
   },
   {
-    id: 'analisis',
-    label: 'Análisis',
-    shortLabel: 'Análisis',
+    id: 'gestion-clinica',
+    label: 'Gestión clínica',
+    shortLabel: 'Clínica',
+    icon: 'Users',
+    items: [
+      { to: ROUTES.PATIENTS, label: 'Pacientes', icon: 'UserCircle' },
+      { to: ROUTES.DOCTORS, label: 'Médicos', icon: 'Stethoscope' },
+      { to: ROUTES.STAFF, label: 'Personal', icon: 'UsersRound' },
+      { to: ROUTES.SPECIALTIES, label: 'Especialidades', icon: 'GraduationCap' },
+      { to: ROUTES.INSURANCES, label: 'Seguros', icon: 'Shield' },
+    ],
+  },
+  {
+    id: 'atencion',
+    label: 'Atención',
+    shortLabel: 'Atención',
+    icon: 'ClipboardList',
+    items: [
+      { to: ROUTES.ORDER_RECEPTION, label: 'Nueva Orden', icon: 'ClipboardPlus' },
+      { to: ROUTES.ORDER_MANAGEMENT, label: 'Gestión de Órdenes', icon: 'ClipboardList' },
+      { to: ROUTES.QUOTATIONS, label: 'Cotizaciones', icon: 'FileText' },
+    ],
+  },
+  {
+    id: 'catalogos',
+    label: 'Catálogos',
+    shortLabel: 'Catálogos',
     icon: 'FlaskConical',
     items: [
-      { to: ROUTES.ANALYSES, label: 'Catálogo análisis', icon: 'FlaskConical' },
-      { to: ROUTES.ANALYSIS_GROUPS, label: 'Grupos', icon: 'Layers' },
-      { to: ROUTES.SAMPLES_CATALOG, label: 'Tipos muestra', icon: 'TestTube' },
+      { to: ROUTES.ANALYSES, label: 'Catálogo de Análisis', icon: 'FlaskConical' },
+      { to: ROUTES.ANALYSIS_GROUPS, label: 'Grupos de Análisis', icon: 'Layers' },
+      { to: ROUTES.SAMPLES_CATALOG, label: 'Tipos de Muestra', icon: 'TestTube' },
       { to: ROUTES.METHODS, label: 'Métodos', icon: 'Microscope' },
-      // { to: ROUTES.COMPONENTS, label: 'Componentes', icon: 'Puzzle' },
+    ],
+  },
+  {
+    id: 'cobros',
+    label: 'Cobros',
+    shortLabel: 'Cobros',
+    icon: 'CreditCard',
+    items: [
+      { to: ROUTES.PAYMENTS, label: 'Pagos', icon: 'CreditCard' },
+      { to: ROUTES.TRANSACTION_MANAGEMENT, label: 'Historial de Cobros', icon: 'Receipt' },
     ],
   },
   {
@@ -136,34 +167,12 @@ export const NAV_GROUPS = [
     shortLabel: 'Caja',
     icon: 'Wallet',
     items: [
-      { to: ROUTES.OPEN_CASH, label: 'Apertura / Cierre', icon: 'Wallet' },
+      { to: ROUTES.OPEN_CASH, label: 'Apertura/Cierre', icon: 'Wallet' },
       { to: ROUTES.CASH_MOVEMENTS, label: 'Movimientos', icon: 'ArrowLeftRight' },
-      { to: ROUTES.CASH_FLOW, label: 'Flujo de caja', icon: 'TrendingUp' },
-      { to: ROUTES.CASH_AUDIT, label: 'Arqueo', icon: 'Scale' },
+      { to: ROUTES.CASH_FLOW, label: 'Flujo de Caja', icon: 'TrendingUp' },
+      { to: ROUTES.CASH_AUDIT, label: 'Arqueos', icon: 'Scale' },
       { to: ROUTES.CASHES, label: 'Cajas', icon: 'Landmark' },
       { to: ROUTES.CASH_CATEGORIES, label: 'Categorías', icon: 'Tags' },
-    ],
-  },
-  {
-    id: 'clinico',
-    label: 'Recepción y atención',
-    shortLabel: 'Recepción y atención',
-    icon: 'ClipboardList',
-    items: [
-      { to: ROUTES.RECEPTION_PATIENTS, label: 'Gestionar pacientes', icon: 'UserCircle' },
-      { to: ROUTES.ORDER_RECEPTION, label: 'Crear orden', icon: 'ClipboardPlus' },
-      { to: ROUTES.QUOTATIONS, label: 'Cotizaciones', icon: 'FileText' },
-      { to: ROUTES.ORDER_MANAGEMENT, label: 'Gestionar orden', icon: 'ClipboardList' },
-    ],
-  },
-  {
-    id: 'transacciones',
-    label: 'Transacciones',
-    shortLabel: 'Transacciones',
-    icon: 'CreditCard',
-    items: [
-      { to: ROUTES.TRANSACTION_MANAGEMENT, label: 'Gestionar Transacciones', icon: 'Wallet' },
-      { to: ROUTES.PAYMENTS, label: 'Pagos', icon: 'CreditCard' },
     ],
   },
 ]
@@ -180,9 +189,9 @@ export const TAB_BAR_ITEMS = [
   {
     id: 'clinical',
     to: ROUTES.ORDER_MANAGEMENT,
-    label: 'Recepción y atención',
+    label: 'Atención',
     icon: 'ClipboardList',
-    prefixes: ['/recepcion', '/clinico'],
+    prefixes: ['/atencion', '/recepcion', '/clinico'],
   },
   {
     id: 'cash',
@@ -196,7 +205,7 @@ export const TAB_BAR_ITEMS = [
     to: ROUTES.PATIENTS,
     label: 'Pacientes',
     icon: 'UserCircle',
-    prefixes: ['/parametros/pacientes'],
+    prefixes: ['/clinica/pacientes', '/parametros/pacientes', '/recepcion/pacientes'],
   },
   {
     id: 'more',
