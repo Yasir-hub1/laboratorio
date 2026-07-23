@@ -69,6 +69,7 @@ export function OpenCashPage() {
   const { can } = usePermission()
   const canOpen = can('caja.apertura-cierre.abrir-caja')
   const canClose = can('caja.apertura-cierre.cerrar-caja')
+  const canExportClose = can('caja.apertura-cierre.exportar')
   const canContinue = can('caja.apertura-cierre.continuar-sesion')
   const canViewMovements = can('caja.apertura-cierre.ver-movimientos')
   const canChangeCash = can('caja.apertura-cierre.cambiar-caja')
@@ -275,8 +276,8 @@ export function OpenCashPage() {
     setCloseModalOpen(true)
   }
 
-  const handleClose = async (e) => {
-    e.preventDefault()
+  const handleClose = async (e, { exportAfter = false } = {}) => {
+    e?.preventDefault?.()
     const openingId = closingTarget?.opening?.id ?? storedOpeningId
     if (!openingId) {
       toast.error('No hay caja abierta para cerrar')
@@ -284,6 +285,10 @@ export function OpenCashPage() {
     }
     if (!closingAmount) {
       toast.error('Ingresa el monto final de cierre')
+      return
+    }
+    if (exportAfter && !canExportClose) {
+      toast.error('No tienes permiso para exportar el reporte de apertura')
       return
     }
     setSubmitting(true)
@@ -299,6 +304,16 @@ export function OpenCashPage() {
         setSessionDetail(null)
       }
       toastApiSuccess('Caja cerrada')
+
+      if (exportAfter) {
+        try {
+          await laboratoryApi.exportOpeningCash(openingId)
+          toastApiSuccess('Excel descargado')
+        } catch (exportErr) {
+          toastApiError(exportErr)
+        }
+      }
+
       setCloseModalOpen(false)
       setClosingTarget(null)
       setClosingAmount('')
@@ -553,7 +568,10 @@ export function OpenCashPage() {
         title="Cerrar caja"
         description="El monto final es el contado físico. Compáralo con el saldo esperado del sistema."
       >
-        <form onSubmit={handleClose} className="space-y-4">
+        <form
+          onSubmit={(e) => handleClose(e, { exportAfter: false })}
+          className="space-y-4"
+        >
           <div className="rounded-lg border border-border bg-surface-muted/40 p-3 text-sm">
             <p className="text-muted">Esperado (sistema)</p>
             <p className="text-lg font-semibold">
@@ -591,7 +609,7 @@ export function OpenCashPage() {
             value={closeNote}
             onChange={(e) => setCloseNote(e.target.value)}
           />
-          <ModalFooter>
+          <ModalFooter className="flex-wrap">
             <Button
               type="button"
               variant="secondary"
@@ -601,8 +619,17 @@ export function OpenCashPage() {
               Cancelar
             </Button>
             <Button type="submit" variant="danger" disabled={submitting}>
-              {submitting ? 'Cerrando…' : 'Confirmar cierre'}
+              {submitting ? 'Cerrando…' : 'Cerrar'}
             </Button>
+            {canClose && canExportClose ? (
+              <Button
+                type="button"
+                disabled={submitting}
+                onClick={(e) => handleClose(e, { exportAfter: true })}
+              >
+                {submitting ? 'Procesando…' : 'Cerrar y exportar'}
+              </Button>
+            ) : null}
           </ModalFooter>
         </form>
       </Modal>

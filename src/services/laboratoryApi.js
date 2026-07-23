@@ -1,16 +1,6 @@
 import { httpClient } from './httpClient'
 import { unwrapData } from '@/utils/apiHelpers'
-import {
-  annulmentBody,
-  buildCashInflowPayload,
-  buildCashOutflowPayload,
-  buildCloseCashPayload,
-  buildInsuranceAnalysisPricePayload,
-  buildInsuranceAnalysisPricesParams,
-  buildAssignCashUserPayload,
-  buildInsuranceBulkPrices,
-  buildOpenCashPayload,
-} from '@/utils/apiPayload'
+import { downloadXlsxResponse } from '@/utils/downloadXlsx'
 
 async function request(method, url, data, config) {
   const response = await httpClient[method](url, data, config)
@@ -328,18 +318,7 @@ export const laboratoryApi = {
       params,
       responseType: 'blob',
     })
-    const disposition = response.headers?.['content-disposition']
-    const match =
-      typeof disposition === 'string' ? disposition.match(/filename="?([^"]+)"?/i) : null
-    const filename = match?.[1] ?? 'bitacora.xlsx'
-    const url = window.URL.createObjectURL(response.data)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
+    downloadXlsxResponse(response, 'bitacora.xlsx')
   },
 
   // ——— Reportes: movimientos activos ———
@@ -355,17 +334,27 @@ export const laboratoryApi = {
       params,
       responseType: 'blob',
     })
-    const disposition = response.headers?.['content-disposition']
-    const match =
-      typeof disposition === 'string' ? disposition.match(/filename="?([^"]+)"?/i) : null
-    const filename = match?.[1] ?? 'movimientos_activos.xlsx'
-    const url = window.URL.createObjectURL(response.data)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
+    downloadXlsxResponse(response, 'movimientos_activos.xlsx')
+  },
+
+  // ——— Reportes: órdenes ———
+  getLaboratoryOrdersReportMeta: () =>
+    request('get', '/reports/laboratory-orders/meta'),
+  getLaboratoryOrdersReport: (params) =>
+    request('get', '/reports/laboratory-orders', { params }),
+  exportLaboratoryOrdersReport: async (params) => {
+    const response = await httpClient.get('/reports/laboratory-orders/export/xlsx', {
+      params,
+      responseType: 'blob',
+    })
+    downloadXlsxResponse(response, 'reporte_ordenes.xlsx')
+  },
+
+  // ——— Excel apertura de caja ———
+  exportOpeningCash: async (openingId) => {
+    const response = await httpClient.get(`/opening-cashes/${openingId}/export/xlsx`, {
+      responseType: 'blob',
+    })
+    downloadXlsxResponse(response, 'apertura_caja.xlsx')
   },
 }

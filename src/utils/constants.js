@@ -76,6 +76,7 @@ export const ROUTES = {
   // Reportes
   ACTIVITY_LOG: '/reportes/bitacora',
   ACTIVE_MOVEMENTS: '/reportes/movimientos-activos',
+  ORDERS_REPORT: '/reportes/ordenes',
 
   // Alias / legacy
   RECEPTION_PATIENTS: '/clinica/pacientes',
@@ -312,6 +313,12 @@ export const NAV_GROUPS = [
         label: 'Movimientos activos',
         icon: 'ArrowLeftRight',
         permission: 'reportes.movimientos',
+      },
+      {
+        to: ROUTES.ORDERS_REPORT,
+        label: 'Órdenes',
+        icon: 'ClipboardList',
+        permission: 'reportes.ordenes',
       },
     ],
   },

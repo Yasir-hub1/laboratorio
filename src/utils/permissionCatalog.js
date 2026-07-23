@@ -75,6 +75,7 @@ const MENU_LABELS = {
   cajas: 'Cajas',
   categorias: 'Categorías',
   bitacora: 'Bitácora',
+  ordenes: 'Órdenes',
 }
 
 const MODULE_ORDER = [
@@ -210,6 +211,7 @@ export const PERMISSION_CATALOG = [
   'caja.apertura-cierre.cerrar-caja',
   'caja.apertura-cierre.ver-movimientos',
   'caja.apertura-cierre.continuar-sesion',
+  'caja.apertura-cierre.exportar',
   'caja.movimientos.listar',
   'caja.movimientos.ingresar',
   'caja.movimientos.egresar',
@@ -219,6 +221,7 @@ export const PERMISSION_CATALOG = [
   'caja.arqueos.listar',
   'caja.arqueos.crear',
   'caja.arqueos.ver',
+  'caja.arqueos.exportar',
   'caja.cajas.listar',
   'caja.cajas.crear',
   'caja.cajas.editar',
@@ -233,6 +236,8 @@ export const PERMISSION_CATALOG = [
   'reportes.movimientos.listar',
   'reportes.movimientos.ver',
   'reportes.movimientos.exportar',
+  'reportes.ordenes.listar',
+  'reportes.ordenes.exportar',
 ]
 
 export function parsePermissionName(name) {
@@ -294,7 +299,16 @@ export function groupPermissionsForMatrix(permissionNames = PERMISSION_CATALOG) 
   })
 }
 
+/** Rol protegido del sistema (antes Administrador). */
+export function isSuperAdminRole(role) {
+  const name = String(role?.name ?? role?.label ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '')
+  return name === 'superadmin' || name === 'super-admin'
+}
+
+/** @deprecated Preferir isSuperAdminRole */
 export function isAdministratorRole(role) {
-  const name = String(role?.name ?? role?.label ?? '').trim().toLowerCase()
-  return name === 'administrador' || name === 'administrator' || name === 'admin'
+  return isSuperAdminRole(role)
 }

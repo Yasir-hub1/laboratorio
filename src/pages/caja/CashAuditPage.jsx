@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Download, Loader2, RefreshCw, Wallet } from 'lucide-react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { AnimatedPage } from '@/components/common/AnimatedPage'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Badge, Button, Card, CardHeader, CardTitle, DataTable, Select } from '@/components/ui'
 import { laboratoryApi } from '@/services/laboratoryApi'
+import { usePermission } from '@/hooks/usePermission'
 import { formatCurrency, formatDateTime, unwrapList } from '@/utils/apiHelpers'
 import { cn } from '@/utils/cn'
-import { toastApiError } from '@/utils/toastApi'
+import { toastApiError, toastApiSuccess } from '@/utils/toastApi'
 
 function isOpeningClosed(record) {
   if (!record) return false
@@ -47,11 +48,14 @@ function splitDateTime(value) {
 }
 
 export function CashAuditPage() {
+  const { can } = usePermission()
+  const canExport = can('caja.arqueos.exportar')
   const [openings, setOpenings] = useState([])
   const [selectedId, setSelectedId] = useState('')
   const [detail, setDetail] = useState(null)
   const [loadingList, setLoadingList] = useState(true)
   const [loadingDetail, setLoadingDetail] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const loadOpenings = useCallback(async () => {
     setLoadingList(true)
@@ -100,6 +104,19 @@ export function CashAuditPage() {
   useEffect(() => {
     loadDetail(selectedId)
   }, [selectedId, loadDetail])
+
+  const handleExport = async () => {
+    if (!canExport || !selectedId) return
+    setExporting(true)
+    try {
+      await laboratoryApi.exportOpeningCash(selectedId)
+      toastApiSuccess('Excel descargado')
+    } catch (err) {
+      toastApiError(err)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const opening = useMemo(() => {
     const fromList = openings.find((o) => String(o.id) === String(selectedId))
@@ -191,10 +208,27 @@ export function CashAuditPage() {
         title="Arqueo de caja"
         description="Revisa aperturas cerradas: esperado vs contado y solo movimientos activos del turno."
         actions={
-          <Button variant="secondary" size="sm" onClick={loadOpenings}>
-            <RefreshCw className="h-4 w-4" />
-            Actualizar
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {canExport && selectedId ? (
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleExport}
+                disabled={exporting || loadingDetail}
+              >
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Descargar reporte
+              </Button>
+            ) : null}
+            <Button variant="secondary" size="sm" onClick={loadOpenings}>
+              <RefreshCw className="h-4 w-4" />
+              Actualizar
+            </Button>
+          </div>
         }
       />
 

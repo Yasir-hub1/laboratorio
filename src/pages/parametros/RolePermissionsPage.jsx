@@ -14,7 +14,7 @@ import { cn } from '@/utils/cn'
 import {
   PERMISSION_CATALOG,
   groupPermissionsForMatrix,
-  isAdministratorRole,
+  isSuperAdminRole,
   permissionLabel,
 } from '@/utils/permissionCatalog'
 import { toastApiError, toastApiSuccess } from '@/utils/toastApi'
@@ -72,7 +72,7 @@ export function RolePermissionsPage() {
   }, [load])
 
   const matrix = useMemo(() => groupPermissionsForMatrix(catalogNames), [catalogNames])
-  const isAdmin = isAdministratorRole(role)
+  const isAdmin = isSuperAdminRole(role)
   const readOnly = isAdmin || !canAssign
 
   const toggleOne = (name) => {
@@ -151,7 +151,7 @@ export function RolePermissionsPage() {
         title={pageTitle}
         description={
           isAdmin
-            ? 'El rol Administrador tiene acceso completo y no se puede editar desde la matriz.'
+            ? 'El rol SuperAdmin tiene acceso completo y no se puede editar desde la matriz.'
             : 'Marca las acciones permitidas por módulo y menú. Solo se muestran etiquetas legibles.'
         }
         actions={
@@ -172,7 +172,7 @@ export function RolePermissionsPage() {
 
       {isAdmin && (
         <Card className="mb-4 border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          El rol Administrador no admite cambios en la matriz de permisos.
+          El rol SuperAdmin no admite cambios en la matriz de permisos.
         </Card>
       )}
 

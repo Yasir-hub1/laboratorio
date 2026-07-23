@@ -9,7 +9,7 @@ export {
   ResultsPage,
 } from './clinico'
 export { PaymentsPage, TransactionManagePage } from './transacciones'
-export { ActivityLogPage, ActiveMovementsPage } from './reportes'
+export { ActivityLogPage, ActiveMovementsPage, OrdersReportPage } from './reportes'
 export { PatientLoginPage, PatientOrdersPage, PatientOrderDetailPage } from './portal'
 export {
   InsuranceLoginPage,

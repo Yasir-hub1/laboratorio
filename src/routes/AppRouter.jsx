@@ -44,7 +44,7 @@ import {
   QuotationsPage,
 } from '@/pages/clinico'
 import { PaymentsPage, TransactionManagePage } from '@/pages/transacciones'
-import { ActivityLogPage, ActiveMovementsPage } from '@/pages/reportes'
+import { ActivityLogPage, ActiveMovementsPage, OrdersReportPage } from '@/pages/reportes'
 import { PatientLoginPage, PatientOrderDetailPage, PatientOrdersPage } from '@/pages/portal'
 import {
   InsuranceLoginPage,
@@ -352,6 +352,10 @@ const router = createBrowserRouter([
       {
         path: 'reportes/movimientos-activos',
         element: withPerm('reportes.movimientos.listar', <ActiveMovementsPage />),
+      },
+      {
+        path: 'reportes/ordenes',
+        element: withPerm('reportes.ordenes.listar', <OrdersReportPage />),
       },
 
       { path: 'caja/ingresos', element: <Navigate to={ROUTES.CASH_MOVEMENTS} replace /> },

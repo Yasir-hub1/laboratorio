@@ -26,7 +26,7 @@ import {
 import { ROUTES } from '@/utils/constants'
 import { buildStatusPayload } from '@/utils/apiPayload'
 import { resolveEntityId } from '@/utils/entityId'
-import { isAdministratorRole } from '@/utils/permissionCatalog'
+import { isSuperAdminRole } from '@/utils/permissionCatalog'
 import { isActiveStatus } from '@/utils/statusHelpers'
 import { toastApiError, toastApiSuccess } from '@/utils/toastApi'
 
@@ -84,7 +84,7 @@ export function RolesPage() {
   }
 
   const openEdit = (row) => {
-    if (isAdministratorRole(row)) return
+    if (isSuperAdminRole(row)) return
     setEditing(row)
     setForm({ name: row.name ?? '' })
     setModalOpen(true)
@@ -92,7 +92,7 @@ export function RolesPage() {
 
   const handleDelete = useCallback(
     async (row) => {
-      if (isAdministratorRole(row)) return
+      if (isSuperAdminRole(row)) return
       const label = row.name ?? 'este rol'
       const ok = await confirm({
         title: 'Eliminar rol',
@@ -122,7 +122,7 @@ export function RolesPage() {
 
   const handleToggleStatus = useCallback(
     async (entity) => {
-      if (isAdministratorRole(entity)) return
+      if (isSuperAdminRole(entity)) return
       const active = isActiveStatus(entity.status ?? entity.is_active)
       const id = resolveEntityId(entity)
       if (!id) return
@@ -160,7 +160,7 @@ export function RolesPage() {
         cell: ({ row }) => {
           const entity = row.original
           const id = resolveEntityId(entity)
-          const isAdmin = isAdministratorRole(entity)
+          const isAdmin = isSuperAdminRole(entity)
 
           return (
             <div className="flex flex-wrap items-center justify-center gap-0.5">
@@ -224,7 +224,7 @@ export function RolesPage() {
     }
   }
 
-  const selectedIsAdmin = selected ? isAdministratorRole(selected) : false
+  const selectedIsAdmin = selected ? isSuperAdminRole(selected) : false
 
   if (index.loading && index.items.length === 0) return <LoadingScreen />
 
