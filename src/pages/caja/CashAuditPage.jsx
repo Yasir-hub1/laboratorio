@@ -83,7 +83,7 @@ export function CashAuditPage() {
     }
     setLoadingDetail(true)
     try {
-      const data = await laboratoryApi.getCashFlowDetail(openingId)
+      const data = await laboratoryApi.getCashFlowDetailActive(openingId)
       setDetail(data)
     } catch (err) {
       toastApiError(err)
@@ -189,7 +189,7 @@ export function CashAuditPage() {
     <AnimatedPage>
       <PageHeader
         title="Arqueo de caja"
-        description="Revisa aperturas cerradas: esperado vs contado y movimientos del turno."
+        description="Revisa aperturas cerradas: esperado vs contado y solo movimientos activos del turno."
         actions={
           <Button variant="secondary" size="sm" onClick={loadOpenings}>
             <RefreshCw className="h-4 w-4" />
@@ -284,7 +284,7 @@ export function CashAuditPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Movimientos del turno</CardTitle>
+              <CardTitle className="text-base">Movimientos activos del turno</CardTitle>
             </CardHeader>
             {movements.length === 0 ? (
               <div className="px-6 pb-6">

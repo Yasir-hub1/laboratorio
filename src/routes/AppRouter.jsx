@@ -44,6 +44,7 @@ import {
   QuotationsPage,
 } from '@/pages/clinico'
 import { PaymentsPage, TransactionManagePage } from '@/pages/transacciones'
+import { ActivityLogPage, ActiveMovementsPage } from '@/pages/reportes'
 import { PatientLoginPage, PatientOrderDetailPage, PatientOrdersPage } from '@/pages/portal'
 import {
   InsuranceLoginPage,
@@ -342,6 +343,17 @@ const router = createBrowserRouter([
         path: 'caja/categorias',
         element: withPerm('caja.categorias.listar', <CashCategoriesPage />),
       },
+
+      // Reportes
+      {
+        path: 'reportes/bitacora',
+        element: withPerm('reportes.bitacora.listar', <ActivityLogPage />),
+      },
+      {
+        path: 'reportes/movimientos-activos',
+        element: withPerm('reportes.movimientos.listar', <ActiveMovementsPage />),
+      },
+
       { path: 'caja/ingresos', element: <Navigate to={ROUTES.CASH_MOVEMENTS} replace /> },
       { path: 'caja/egresos', element: <Navigate to={ROUTES.CASH_MOVEMENTS} replace /> },
       { path: 'caja/tipos-ingreso', element: <Navigate to={ROUTES.CASH_CATEGORIES} replace /> },

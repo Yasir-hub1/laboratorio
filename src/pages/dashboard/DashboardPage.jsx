@@ -134,7 +134,7 @@ const fadeUp = {
 }
 
 export function DashboardPage() {
-  const { user, branchId, branchName, cashName } = useAuth()
+  const { user, branchId, branchName, cashName, openingCashId } = useAuth()
   const { permissions } = usePermission()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -164,13 +164,19 @@ export function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [branchId])
+  }, [branchId, openingCashId])
 
   useEffect(() => {
     loadDashboard()
   }, [loadDashboard])
 
   const cashSummary = data?.cash_summary ?? null
+  const hasCashSession = Boolean(cashSummary?.has_session)
+  const cashSessionMessage =
+    cashSummary?.message ||
+    (!hasCashSession
+      ? 'Sin caja de sesión. Los montos de caja se muestran en 0.'
+      : null)
   const orders = Array.isArray(data?.orders) ? data.orders : []
   const pipeline = data?.pipeline ?? {
     registered: 0,
@@ -181,28 +187,38 @@ export function DashboardPage() {
 
   if (loading) return <LoadingScreen />
 
+  const cashLabel = hasCashSession
+    ? cashSummary?.cash_name || cashName || 'mi caja'
+    : null
+
   const stats = [
     {
       key: 'income',
-      label: 'Ingresos del día',
+      label: hasCashSession ? `Ingresos (${cashLabel})` : 'Ingresos (mi caja)',
       value: formatCurrency(
-        cashSummary?.total_inflow ?? cashSummary?.total_inflows ?? 0,
+        hasCashSession
+          ? (cashSummary?.total_inflow ?? cashSummary?.total_inflows ?? 0)
+          : 0,
       ),
       style: statStyles.income,
     },
     {
       key: 'expense',
-      label: 'Egresos del día',
+      label: hasCashSession ? `Egresos (${cashLabel})` : 'Egresos (mi caja)',
       value: formatCurrency(
-        cashSummary?.total_outflow ?? cashSummary?.total_outflows ?? 0,
+        hasCashSession
+          ? (cashSummary?.total_outflow ?? cashSummary?.total_outflows ?? 0)
+          : 0,
       ),
       style: statStyles.expense,
     },
     {
       key: 'balance',
-      label: 'Saldo caja',
+      label: hasCashSession ? `Saldo (${cashLabel})` : 'Saldo caja',
       value: formatCurrency(
-        cashSummary?.balance ?? cashSummary?.total_current_amount ?? 0,
+        hasCashSession
+          ? (cashSummary?.balance ?? cashSummary?.total_current_amount ?? 0)
+          : 0,
       ),
       style: statStyles.balance,
     },
@@ -223,11 +239,30 @@ export function DashboardPage() {
         title={`Hola, ${user?.name ?? 'Usuario'}`}
         description={
           branchName
-            ? `${branchName}${cashName ? ` · ${cashName}` : ''} — resumen del día y tareas pendientes.`
+            ? `${branchName}${
+                hasCashSession && (cashSummary?.cash_name || cashName)
+                  ? ` · ${cashSummary?.cash_name || cashName}`
+                  : ''
+              } — resumen de tu sesión de caja y tareas pendientes.`
             : 'Resumen del día y acceso a las tareas más usadas.'
         }
         actions={<Badge variant="success">PWA activa</Badge>}
       />
+
+      {cashSessionMessage ? (
+        <Card className="mb-4 border-amber-200/70 bg-amber-50/60 p-4">
+          <p className="text-sm text-amber-900">{cashSessionMessage}</p>
+          <Can permission="caja.apertura-cierre.listar">
+            <Link
+              to={ROUTES.OPEN_CASH}
+              className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-800 underline-offset-2 hover:underline"
+            >
+              Ir a apertura / cierre
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </Can>
+        </Card>
+      ) : null}
 
       <motion.nav
         initial={{ opacity: 0, y: 8 }}

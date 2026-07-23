@@ -73,6 +73,10 @@ export const ROUTES = {
   CASHES: '/caja/cajas',
   CASH_CATEGORIES: '/caja/categorias',
 
+  // Reportes
+  ACTIVITY_LOG: '/reportes/bitacora',
+  ACTIVE_MOVEMENTS: '/reportes/movimientos-activos',
+
   // Alias / legacy
   RECEPTION_PATIENTS: '/clinica/pacientes',
   INFLOWS: '/caja/movimientos',
@@ -288,6 +292,26 @@ export const NAV_GROUPS = [
         label: 'Categorías',
         icon: 'Tags',
         permission: 'caja.categorias',
+      },
+    ],
+  },
+  {
+    id: 'reportes',
+    label: 'Reportes',
+    shortLabel: 'Reportes',
+    icon: 'FileBarChart2',
+    items: [
+      {
+        to: ROUTES.ACTIVITY_LOG,
+        label: 'Bitácora',
+        icon: 'History',
+        permission: 'reportes.bitacora',
+      },
+      {
+        to: ROUTES.ACTIVE_MOVEMENTS,
+        label: 'Movimientos activos',
+        icon: 'ArrowLeftRight',
+        permission: 'reportes.movimientos',
       },
     ],
   },

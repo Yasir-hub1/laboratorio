@@ -36,7 +36,7 @@ export const laboratoryApi = {
     }),
 
   /** Panel Inicio — solo exige inicio.dashboard.listar */
-  getDashboard: (params) => request('get', '/dashboard', null, { params }),
+  getDashboard: (params) => request('get', '/dashboard', { params }),
 
   // ——— Sucursales ———
   getBranches: (params) => listRequest('/branches', params),
@@ -47,10 +47,13 @@ export const laboratoryApi = {
   updateBranchStatus: (id, body) => request('post', `/branches/${id}/status`, body),
 
   // ——— Flujo de caja ———
-  getCashFlowOverview: (params) => request('get', '/cash-flow/overview', null, { params }),
-  getCashFlowGeneral: (params) => request('get', '/cash-flow/general', null, { params }),
+  getCashFlowOverview: (params) => request('get', '/cash-flow/overview', { params }),
+  getCashFlowGeneral: (params) => request('get', '/cash-flow/general', { params }),
   getCashFlowDetail: (openingCashId, params) =>
-    request('get', `/cash-flow/detail/${openingCashId}`, null, { params }),
+    request('get', `/cash-flow/detail/${openingCashId}`, { params }),
+  /** Solo movimientos activos (status=1) — Arqueo */
+  getCashFlowDetailActive: (openingCashId, params) =>
+    request('get', `/cash-flow/detail-active/${openingCashId}`, { params }),
   getCashMovementFilters: () => request('get', '/cash-flow/movement-filters'),
 
   // ——— Seguros ———
@@ -318,4 +321,51 @@ export const laboratoryApi = {
   createImpresion: (body) => request('post', '/impresions', body),
   getImpresionsByOrder: (orderId) => request('get', `/impresions/order/${orderId}`),
   getActivityLogs: (params) => listRequest('/activity-logs', params),
+  getActivityLog: (id) => request('get', `/activity-logs/${id}`),
+  getActivityLogsMeta: () => request('get', '/activity-logs/meta'),
+  exportActivityLogs: async (params) => {
+    const response = await httpClient.get('/activity-logs/export/xlsx', {
+      params,
+      responseType: 'blob',
+    })
+    const disposition = response.headers?.['content-disposition']
+    const match =
+      typeof disposition === 'string' ? disposition.match(/filename="?([^"]+)"?/i) : null
+    const filename = match?.[1] ?? 'bitacora.xlsx'
+    const url = window.URL.createObjectURL(response.data)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  },
+
+  // ——— Reportes: movimientos activos ———
+  getActiveMovements: (params) =>
+    request('get', '/reports/active-movements', { params }),
+  getActiveMovementsMeta: () => request('get', '/reports/active-movements/meta'),
+  getActiveMovementsOpenings: (params) =>
+    request('get', '/reports/active-movements/openings', { params }),
+  getActiveMovementsOptions: (params) =>
+    request('get', '/reports/active-movements/options', { params }),
+  exportActiveMovements: async (params) => {
+    const response = await httpClient.get('/reports/active-movements/export/xlsx', {
+      params,
+      responseType: 'blob',
+    })
+    const disposition = response.headers?.['content-disposition']
+    const match =
+      typeof disposition === 'string' ? disposition.match(/filename="?([^"]+)"?/i) : null
+    const filename = match?.[1] ?? 'movimientos_activos.xlsx'
+    const url = window.URL.createObjectURL(response.data)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  },
 }

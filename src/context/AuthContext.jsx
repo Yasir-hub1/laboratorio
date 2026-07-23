@@ -47,6 +47,9 @@ export function AuthProvider({ children }) {
   const [roleName, setRoleName] = useState(() => storage.getRoleName() ?? '')
   const [cashId, setCashId] = useState(() => storage.getCashId() ?? '')
   const [cashName, setCashName] = useState(() => storage.getCashName() ?? '')
+  const [openingCashId, setOpeningCashIdState] = useState(
+    () => storage.getOpeningCashId() ?? '',
+  )
 
   const isAuthenticated = Boolean(storage.getToken())
   const hasSelectedAccess = Boolean(branchId && roleId)
@@ -186,6 +189,7 @@ export function AuthProvider({ children }) {
         storage.clearCashContext()
         setCashId('')
         setCashName('')
+        setOpeningCashIdState('')
 
         const response = await laboratoryApi.selectAccess({
           branch_id: selectedBranchId,
@@ -241,6 +245,7 @@ export function AuthProvider({ children }) {
     setRoleName('')
     setCashId('')
     setCashName('')
+    setOpeningCashIdState('')
   }, [])
 
   const setCashContext = useCallback(({ cashId: nextCashId, cashName: nextCashName }) => {
@@ -257,6 +262,7 @@ export function AuthProvider({ children }) {
     storage.clearCashContext()
     setCashId('')
     setCashName('')
+    setOpeningCashIdState('')
   }, [])
 
   const resetSessionAccess = useCallback(() => {
@@ -267,11 +273,14 @@ export function AuthProvider({ children }) {
     setRoleName('')
     setCashId('')
     setCashName('')
+    setOpeningCashIdState('')
     setPermissions([])
   }, [])
 
   const setOpeningCash = useCallback((id) => {
-    storage.setOpeningCashId(id ?? '')
+    const next = id ? String(id) : ''
+    storage.setOpeningCashId(next)
+    setOpeningCashIdState(next)
   }, [])
 
   const value = useMemo(
@@ -290,6 +299,7 @@ export function AuthProvider({ children }) {
       roleName,
       cashId,
       cashName,
+      openingCashId,
       login,
       selectAccess,
       refreshAccessData,
@@ -298,7 +308,6 @@ export function AuthProvider({ children }) {
       clearCashContext,
       resetSessionAccess,
       setOpeningCash,
-      openingCashId: storage.getOpeningCashId(),
     }),
     [
       user,
@@ -315,6 +324,7 @@ export function AuthProvider({ children }) {
       roleName,
       cashId,
       cashName,
+      openingCashId,
       login,
       selectAccess,
       refreshAccessData,

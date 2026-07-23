@@ -13,14 +13,15 @@ import { toastApiError } from '@/utils/toastApi'
 function isOpeningOpen(record) {
   if (!record) return false
   if (record.closed_at || record.close_date) return false
-  if (record.is_open === false || record.is_open === 0 || record.status === 'closed') return false
-  return (
-    record.is_open === true ||
-    record.is_open === 1 ||
-    record.status === 'open' ||
-    record.status === 1 ||
-    true
-  )
+  if (record.is_open === false || record.is_open === 0) return false
+  if (record.status === 'closed' || record.status === 2 || record.status === '2') {
+    return false
+  }
+  if (record.is_open === true || record.is_open === 1) return true
+  if (record.status === 'open' || record.status === 1 || record.status === '1') {
+    return true
+  }
+  return false
 }
 
 export function CashFlowPage() {
@@ -183,7 +184,7 @@ export function CashFlowPage() {
     <AnimatedPage>
       <PageHeader
         title="Flujo de caja"
-        description={`Resumen de aperturas${branchName ? ` · ${branchName}` : ''}.`}
+        description={`Totales de la sucursal${branchName ? ` · ${branchName}` : ''} (no es solo tu sesión).`}
         actions={
           <Button variant="secondary" size="sm" onClick={loadData}>
             <RefreshCw className="h-4 w-4" />
@@ -219,6 +220,11 @@ export function CashFlowPage() {
             ))}
           </Select>
         </div>
+        <p className="mt-3 text-xs text-muted">
+          El rango incluye aperturas iniciadas en esas fechas, sesiones que siguen abiertas
+          (abiertas antes del hasta) y cierres dentro del rango. Vaciar fechas lista todas las
+          aperturas de la sucursal.
+        </p>
       </Card>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -241,7 +247,7 @@ export function CashFlowPage() {
         {openings.length === 0 ? (
           <EmptyState
             title="Sin aperturas"
-            description="No hay aperturas en el rango seleccionado."
+            description="No hay aperturas que coincidan con el filtro. Prueba vaciar fechas o ampliar el rango."
           />
         ) : (
           <DataTable columns={columns} data={openings} />

@@ -32,6 +32,7 @@ const ACTION_LABELS = {
   'gestionar-revisadas': 'Gestionar revisadas',
   'gestionar-completadas': 'Gestionar completadas',
   'gestionar-anuladas': 'Gestionar anuladas',
+  exportar: 'Exportar',
 }
 
 const MODULE_LABELS = {
@@ -42,6 +43,7 @@ const MODULE_LABELS = {
   catalogos: 'Catálogos',
   cobros: 'Cobros',
   caja: 'Caja',
+  reportes: 'Reportes',
 }
 
 const MENU_LABELS = {
@@ -72,9 +74,26 @@ const MENU_LABELS = {
   arqueos: 'Arqueos',
   cajas: 'Cajas',
   categorias: 'Categorías',
+  bitacora: 'Bitácora',
 }
 
-/** Lista plana de los 132 permisos Spatie */
+const MODULE_ORDER = [
+  'inicio',
+  'empresa',
+  'gestion-clinica',
+  'atencion',
+  'catalogos',
+  'cobros',
+  'caja',
+  'reportes',
+]
+
+/** Alias públicos para etiquetas (Roles → Permisos) */
+export const PERMISSION_MODULE_LABELS = MODULE_LABELS
+export const PERMISSION_MENU_LABELS = MENU_LABELS
+export const PERMISSION_ACTION_LABELS = ACTION_LABELS
+
+/** Lista plana de permisos Spatie (fallback si GET /permissions falla) */
 export const PERMISSION_CATALOG = [
   'inicio.dashboard.listar',
   'empresa.usuarios.listar',
@@ -208,6 +227,12 @@ export const PERMISSION_CATALOG = [
   'caja.categorias.crear',
   'caja.categorias.editar',
   'caja.categorias.eliminar',
+  'reportes.bitacora.listar',
+  'reportes.bitacora.ver',
+  'reportes.bitacora.exportar',
+  'reportes.movimientos.listar',
+  'reportes.movimientos.ver',
+  'reportes.movimientos.exportar',
 ]
 
 export function parsePermissionName(name) {
@@ -254,11 +279,19 @@ export function groupPermissionsForMatrix(permissionNames = PERMISSION_CATALOG) 
     })
   }
 
-  return Array.from(modules.values()).map((mod) => ({
-    key: mod.key,
-    label: mod.label,
-    menus: Array.from(mod.menus.values()),
-  }))
+  const orderedKeys = [
+    ...MODULE_ORDER.filter((key) => modules.has(key)),
+    ...Array.from(modules.keys()).filter((key) => !MODULE_ORDER.includes(key)),
+  ]
+
+  return orderedKeys.map((key) => {
+    const mod = modules.get(key)
+    return {
+      key: mod.key,
+      label: mod.label,
+      menus: Array.from(mod.menus.values()),
+    }
+  })
 }
 
 export function isAdministratorRole(role) {
