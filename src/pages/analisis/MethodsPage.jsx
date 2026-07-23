@@ -9,6 +9,7 @@ import { RowActions } from '@/components/common/RowActions'
 import { EntityViewModal } from '@/components/common/EntityViewModal'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
 import { useEntityView } from '@/hooks/useEntityView'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
 import { Badge, Button, Card, DataTable, Modal, ModalFooter } from '@/components/ui'
 import { Input } from '@/components/ui/Input'
@@ -30,6 +31,7 @@ function methodDetailFields(data) {
 }
 
 export function MethodsPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('catalogos.metodos')
   const { confirmDeactivate } = useConfirmAction()
   const index = useIndexQuery(laboratoryApi.getMethods)
   const [modalOpen, setModalOpen] = useState(false)
@@ -100,14 +102,14 @@ export function MethodsPage() {
         header: 'Acciones',
         cell: ({ row }) => (
           <RowActions
-            onView={() => openView(row.original)}
-            onEdit={() => openEdit(row.original)}
-            onDelete={() => handleDeactivate(row.original)}
+            onView={canView ? () => openView(row.original) : undefined}
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDeactivate ? () => handleDeactivate(row.original) : undefined}
           />
         ),
       },
     ],
-    [openView, openEdit, handleDeactivate],
+    [canView, canEdit, canDeactivate, openView, openEdit, handleDeactivate],
   )
 
   const handleSubmit = async (e) => {
@@ -143,10 +145,12 @@ export function MethodsPage() {
         title="Métodos"
         description="Catálogo de métodos analíticos del laboratorio."
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Nuevo método
-          </Button>
+          canCreate ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nuevo método
+            </Button>
+          ) : null
         }
       />
 
@@ -155,8 +159,8 @@ export function MethodsPage() {
           <EmptyState
             title="Sin métodos"
             description="Registra el primer método analítico."
-            actionLabel="Nuevo método"
-            onAction={openCreate}
+            actionLabel={canCreate ? "Nuevo método" : undefined}
+            onAction={canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable

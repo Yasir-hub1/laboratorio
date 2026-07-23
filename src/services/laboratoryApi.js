@@ -35,6 +35,9 @@ export const laboratoryApi = {
       role_id: body.role_id != null ? String(body.role_id) : undefined,
     }),
 
+  /** Panel Inicio — solo exige inicio.dashboard.listar */
+  getDashboard: (params) => request('get', '/dashboard', null, { params }),
+
   // ——— Sucursales ———
   getBranches: (params) => listRequest('/branches', params),
   getBranch: (id) => request('get', `/branches/${id}`),
@@ -119,6 +122,12 @@ export const laboratoryApi = {
   updateUserStatus: (id, body) => request('post', `/users/${id}/status`, body),
 
   getRoles: (params) => listRequest('/roles', params),
+  getRole: (id) => request('get', `/roles/${id}`),
+  createRole: (body) => request('post', '/roles', body),
+  updateRole: (id, body) => request('put', `/roles/${id}`, body),
+  deleteRole: (id) => request('delete', `/roles/${id}`),
+  updateRoleStatus: (id, body) => request('post', `/roles/${id}/status`, body),
+  syncRolePermissions: (id, body) => request('post', `/roles/${id}/permissions`, body),
   getPermissions: (params) => listRequest('/permissions', params),
 
   // ——— Pacientes ———
@@ -230,6 +239,7 @@ export const laboratoryApi = {
   getLaboratoryOrders: (params) => listRequest('/laboratory-orders', params),
   getLaboratoryOrderQueueCounts: () => request('get', '/laboratory-orders/queue-counts'),
   getLaboratoryOrder: (id) => request('get', `/laboratory-orders/${id}`),
+  getOrderDetailSummary: (id) => request('get', `/laboratory-orders/${id}/detail-summary`),
   createLaboratoryOrder: (body) => request('post', '/laboratory-orders', body),
   annulLaboratoryOrder: (id, body) =>
     request('post', `/laboratory-orders/${id}/annular`, annulmentBody(body)),
@@ -244,6 +254,8 @@ export const laboratoryApi = {
     request('post', `/laboratory-orders/${id}/save-results`, body, {
       params: includeChecks ? { include: 'checks' } : undefined,
     }),
+  updateResultValidations: (id, body) =>
+    request('post', `/laboratory-orders/${id}/update-result-validations`, body),
   validateOrderResults: (id, body, { includeChecks = true } = {}) =>
     request('post', `/laboratory-orders/${id}/validate-results`, body, {
       params: includeChecks ? { include: 'checks' } : undefined,
@@ -267,6 +279,7 @@ export const laboratoryApi = {
   receiveSample: (body) => request('post', '/laboratory-samples/receive', body),
   receiveMultipleSamples: (body) =>
     request('post', '/laboratory-samples/receive-multiple', body),
+  updateLaboratorySample: (id, body) => request('put', `/laboratory-samples/${id}`, body),
   getOrderLaboratorySamples: (orderId) =>
     request('get', `/laboratory-samples/order/${orderId}`),
 

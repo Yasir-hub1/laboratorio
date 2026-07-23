@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input'
 import { laboratoryApi } from '@/services/laboratoryApi'
 import { useAuth } from '@/hooks/useAuth'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
+import { usePermission } from '@/hooks/usePermission'
 import { formatCurrency, formatDateTime } from '@/utils/apiHelpers'
 import {
   cashDisplayName,
@@ -65,6 +66,12 @@ function AmountStat({ label, value, icon: Icon, accentClass }) {
 export function OpenCashPage() {
   const { setOpeningCash, setCashContext, openingCashId, cashId, cashName, branchName } =
     useAuth()
+  const { can } = usePermission()
+  const canOpen = can('caja.apertura-cierre.abrir-caja')
+  const canClose = can('caja.apertura-cierre.cerrar-caja')
+  const canContinue = can('caja.apertura-cierre.continuar-sesion')
+  const canViewMovements = can('caja.apertura-cierre.ver-movimientos')
+  const canChangeCash = can('caja.apertura-cierre.cambiar-caja')
   const index = useIndexQuery(laboratoryApi.getOpeningCashes, {
     initialOrderBy: 'openning_date',
     initialOrderDir: 'desc',
@@ -323,9 +330,11 @@ export function OpenCashPage() {
         title="Apertura y cierre de caja"
         description="Gestiona tus cajas asignadas, activa la sesión del turno y cierra al finalizar."
         actions={
-          <Button variant="secondary" asChild>
-            <Link to={ROUTES.SELECT_CASH}>Cambiar caja (login)</Link>
-          </Button>
+          canChangeCash ? (
+            <Button variant="secondary" asChild>
+              <Link to={ROUTES.SELECT_CASH}>Cambiar caja (login)</Link>
+            </Button>
+          ) : null
         }
       />
 
@@ -387,18 +396,22 @@ export function OpenCashPage() {
           )}
 
           <div className="flex flex-wrap gap-2 border-t border-emerald-200/60 px-6 py-4">
-            <Button
-              type="button"
-              variant="danger"
-              onClick={() => openCloseModal(activeSession.cash, activeSession.opening)}
-              disabled={loadingDetail}
-            >
-              <Lock className="h-4 w-4" aria-hidden />
-              Cerrar caja
-            </Button>
-            <Button type="button" variant="secondary" asChild>
-              <Link to={ROUTES.CASH_MOVEMENTS}>Ver movimientos</Link>
-            </Button>
+            {canClose ? (
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => openCloseModal(activeSession.cash, activeSession.opening)}
+                disabled={loadingDetail}
+              >
+                <Lock className="h-4 w-4" aria-hidden />
+                Cerrar caja
+              </Button>
+            ) : null}
+            {canViewMovements ? (
+              <Button type="button" variant="secondary" asChild>
+                <Link to={ROUTES.CASH_MOVEMENTS}>Ver movimientos</Link>
+              </Button>
+            ) : null}
           </div>
         </Card>
       )}
@@ -440,13 +453,13 @@ export function OpenCashPage() {
                     </Badge>
                   </CardHeader>
                   <div className="flex flex-wrap gap-2 px-6 pb-6">
-                    {!open && (
+                    {!open && canOpen && (
                       <Button type="button" size="sm" onClick={() => openOpenModal(cash)}>
                         <Unlock className="h-3.5 w-3.5" />
                         Abrir
                       </Button>
                     )}
-                    {open && !isCurrent && (
+                    {open && !isCurrent && canContinue && (
                       <Button
                         type="button"
                         size="sm"
@@ -456,7 +469,7 @@ export function OpenCashPage() {
                         Usar sesión
                       </Button>
                     )}
-                    {open && (
+                    {open && canClose && (
                       <Button
                         type="button"
                         size="sm"

@@ -1,6 +1,6 @@
 /** Estilos compartidos de comprobantes PDF (orden / pago / resultados). */
 export const RECEIPT_REPORT_BASE_STYLES = `
-  @page { margin: 1cm; }
+  @page { margin: 12mm 12mm 18mm 12mm; }
   * { box-sizing: border-box; }
   body {
     font-family: Helvetica, Arial, sans-serif;
@@ -12,7 +12,10 @@ export const RECEIPT_REPORT_BASE_STYLES = `
     padding: 1cm;
     background: #fff;
   }
-  .sheet { background: #fff; padding: 0; }
+  .sheet {
+    background: #fff;
+    padding: 0 0 24px 0;
+  }
   .header {
     width: 100%;
     margin-bottom: 0.5cm;
@@ -143,17 +146,25 @@ export const RECEIPT_REPORT_BASE_STYLES = `
   .payment-detail table { width: 100%; border-collapse: collapse; }
   .payment-detail td { padding: 3px 5px; }
   .payment-detail td.label { width: 35%; font-weight: bold; }
+  /* Espacio inferior extra: html2canvas suele recortar la última línea del pie */
   .footer {
-    margin-top: 24px;
+    margin-top: 28px;
+    margin-bottom: 8px;
+    padding-top: 8px;
+    padding-bottom: 16px;
     font-size: 8pt;
     color: #777;
     border-top: 1px solid #eee;
-    padding-top: 5px;
+    line-height: 1.4;
   }
-  .footer table { width: 100%; }
+  .footer table { width: 100%; border-collapse: collapse; }
+  .footer td {
+    padding: 2px 0 6px;
+    vertical-align: middle;
+  }
   @media print {
     body { background: #fff; padding: 0; margin: 0; }
-    .sheet { box-shadow: none; padding: 0; }
+    .sheet { box-shadow: none; padding: 0 0 24px 0; }
   }
 `
 

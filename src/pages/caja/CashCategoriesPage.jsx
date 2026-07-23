@@ -6,6 +6,7 @@ import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { EmptyState } from '@/components/common/EmptyState'
 import { RowActions } from '@/components/common/RowActions'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { Badge, Button, Card, DataTable, Modal, ModalFooter, Select } from '@/components/ui'
 import { Input } from '@/components/ui/Input'
 import { laboratoryApi } from '@/services/laboratoryApi'
@@ -22,6 +23,7 @@ function normalizeCategory(row, kind) {
 }
 
 export function CashCategoriesPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('caja.categorias')
   const { confirmDeactivate } = useConfirmAction()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -137,13 +139,13 @@ export function CashCategoriesPage() {
         enableSorting: false,
         cell: ({ row }) => (
           <RowActions
-            onEdit={() => openEdit(row.original)}
-            onDelete={() => handleDelete(row.original)}
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDelete ? () => handleDelete(row.original) : undefined}
           />
         ),
       },
     ],
-    [handleDelete],
+    [canEdit, canDelete, handleDelete],
   )
 
   if (loading && items.length === 0) return <LoadingScreen />
@@ -154,10 +156,12 @@ export function CashCategoriesPage() {
         title="Categorías de caja"
         description="Catálogo unificado de conceptos de ingreso y egreso."
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Nueva categoría
-          </Button>
+          canCreate ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nueva categoría
+            </Button>
+          ) : null
         }
       />
 
@@ -166,8 +170,8 @@ export function CashCategoriesPage() {
           <EmptyState
             title="Sin categorías"
             description="Crea la primera categoría de ingreso o egreso."
-            actionLabel="Nueva categoría"
-            onAction={openCreate}
+            actionLabel={canCreate ? "Nueva categoría" : undefined}
+            onAction={canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable columns={columns} data={items} getRowId={(row) => row._key} />

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { laboratoryApi } from '@/services/laboratoryApi'
 import { storage } from '@/utils/storage'
 
@@ -26,12 +26,20 @@ function resolveAccessFromResponse(selectedBranchId, selectedRoleId, branches, r
   return { branchId, roleId, branchName, roleName }
 }
 
+function normalizePermissions(perms) {
+  if (!Array.isArray(perms)) return []
+  return perms
+    .map((p) => (typeof p === 'string' ? p : p?.name))
+    .filter((p) => typeof p === 'string' && p.length > 0)
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => storage.getUser())
   const [access, setAccess] = useState(() => storage.getAccess())
-  const [permissions, setPermissions] = useState([])
+  const [permissions, setPermissions] = useState(() => storage.getPermissions())
   const [isLoading, setIsLoading] = useState(false)
   const [sessionReady, setSessionReady] = useState(false)
+  const rehydratingRef = useRef(false)
 
   const [branchId, setBranchId] = useState(() => storage.getBranchId() ?? '')
   const [roleId, setRoleId] = useState(() => storage.getRoleId() ?? '')
@@ -44,58 +52,118 @@ export function AuthProvider({ children }) {
   const hasSelectedAccess = Boolean(branchId && roleId)
   const hasSelectedCash = Boolean(cashId && storage.hasCashContext())
 
-  useEffect(() => {
-    setSessionReady(true)
+  const applyAccessContext = useCallback((ctx, apiUser, perms = []) => {
+    const normalized = normalizePermissions(perms)
+    storage.setAccessContext({
+      branchId: ctx.branchId,
+      roleId: ctx.roleId,
+      branchName: ctx.branchName,
+      roleName: ctx.roleName,
+    })
+    storage.setPermissions(normalized)
+
+    if (apiUser) {
+      storage.setUser(apiUser)
+      setUser(apiUser)
+    }
+
+    setBranchId(ctx.branchId)
+    setRoleId(ctx.roleId)
+    setBranchName(ctx.branchName)
+    setRoleName(ctx.roleName)
+    setPermissions(normalized)
   }, [])
 
-  const applyAccessContext = useCallback(
-    (ctx, apiUser, perms = []) => {
-      storage.setAccessContext({
-        branchId: ctx.branchId,
-        roleId: ctx.roleId,
-        branchName: ctx.branchName,
-        roleName: ctx.roleName,
-      })
+  /** Tras F5: si hay contexto pero permissions vacío → re-select-access silencioso */
+  useEffect(() => {
+    let cancelled = false
 
-      if (apiUser) {
-        storage.setUser(apiUser)
-        setUser(apiUser)
+    async function rehydratePermissions() {
+      const token = storage.getToken()
+      const savedBranch = storage.getBranchId()
+      const savedRole = storage.getRoleId()
+      const savedPerms = storage.getPermissions()
+
+      if (!token || !savedBranch || !savedRole) {
+        if (!cancelled) setSessionReady(true)
+        return
       }
 
-      setBranchId(ctx.branchId)
-      setRoleId(ctx.roleId)
-      setBranchName(ctx.branchName)
-      setRoleName(ctx.roleName)
-      setPermissions(perms)
-    },
-    [],
-  )
-
-  const login = useCallback(
-    async (email, password) => {
-      setIsLoading(true)
-      try {
-        const data = await laboratoryApi.login({ email, password })
-        storage.setToken(data.token)
-        storage.setUser(data.user)
-        setUser(data.user)
-
-        if (data.access) {
-          const normalized = {
-            branches: filterActiveAccessItems(data.access.branches ?? []),
-            roles: filterActiveAccessItems(data.access.roles ?? []),
-          }
-          storage.setAccess(normalized)
-          setAccess(normalized)
+      if (savedPerms.length > 0) {
+        if (!cancelled) {
+          setPermissions(savedPerms)
+          setSessionReady(true)
         }
-
-        return data
-      } finally {
-        setIsLoading(false)
+        return
       }
-    },
-    [],
-  )
+
+      if (rehydratingRef.current) {
+        if (!cancelled) setSessionReady(true)
+        return
+      }
+
+      rehydratingRef.current = true
+      try {
+        const accessData = storage.getAccess() ?? (await laboratoryApi.getAccessData())
+        const branches = filterActiveAccessItems(accessData?.branches ?? [])
+        const roles = filterActiveAccessItems(accessData?.roles ?? [])
+        storage.setAccess({ branches, roles })
+        if (!cancelled) setAccess({ branches, roles })
+
+        const response = await laboratoryApi.selectAccess({
+          branch_id: savedBranch,
+          role_id: savedRole,
+        })
+
+        const ctx = resolveAccessFromResponse(
+          savedBranch,
+          savedRole,
+          branches,
+          roles,
+          response?.user,
+        )
+
+        if (!cancelled) {
+          applyAccessContext(ctx, response?.user ?? storage.getUser(), response?.permissions ?? [])
+        }
+      } catch {
+        /* mantener sesión; backend seguirá validando */
+      } finally {
+        rehydratingRef.current = false
+        if (!cancelled) setSessionReady(true)
+      }
+    }
+
+    rehydratePermissions()
+    return () => {
+      cancelled = true
+    }
+  }, [applyAccessContext])
+
+  const login = useCallback(async (email, password) => {
+    setIsLoading(true)
+    try {
+      const data = await laboratoryApi.login({ email, password })
+      storage.setToken(data.token)
+      storage.setUser(data.user)
+      setUser(data.user)
+      storage.setPermissions([])
+      setPermissions([])
+
+      if (data.access) {
+        const normalized = {
+          branches: filterActiveAccessItems(data.access.branches ?? []),
+          roles: filterActiveAccessItems(data.access.roles ?? []),
+        }
+        storage.setAccess(normalized)
+        setAccess(normalized)
+      }
+
+      return data
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   const selectAccess = useCallback(
     async (selectedBranchId, selectedRoleId) => {
@@ -191,7 +259,6 @@ export function AuthProvider({ children }) {
     setCashName('')
   }, [])
 
-  /** Volver a elegir sucursal/rol (p. ej. desde selección de caja). */
   const resetSessionAccess = useCallback(() => {
     storage.clearAccessContext()
     setBranchId('')

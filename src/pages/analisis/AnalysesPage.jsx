@@ -10,6 +10,7 @@ import { RowActions } from '@/components/common/RowActions'
 import { EntityViewModal } from '@/components/common/EntityViewModal'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
 import { useEntityView } from '@/hooks/useEntityView'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { useApiList } from '@/hooks/useApiList'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
 import { Button, Card, DataTable, Modal, ModalFooter } from '@/components/ui'
@@ -53,6 +54,7 @@ function analysisDetailFields(data) {
 }
 
 export function AnalysesPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('catalogos.catalogo-analisis')
   const navigate = useNavigate()
   const { confirmDeactivate } = useConfirmAction()
   const index = useIndexQuery(laboratoryApi.getLaboratoryAnalyses)
@@ -144,9 +146,9 @@ export function AnalysesPage() {
           const id = resolveEntityId(row.original)
           return (
             <RowActions
-              onView={() => openView(row.original)}
-              onEdit={() => openEdit(row.original)}
-              onDelete={() => handleDeactivate(row.original)}
+              onView={canView ? () => openView(row.original) : undefined}
+              onEdit={canEdit ? () => openEdit(row.original) : undefined}
+              onDelete={canDeactivate ? () => handleDeactivate(row.original) : undefined}
               onExtra={
                 id
                   ? () => navigate(ROUTES.ANALYSIS_SUBGROUPS.replace(':analysisId', id))
@@ -159,7 +161,7 @@ export function AnalysesPage() {
         },
       },
     ],
-    [navigate, openView, handleDeactivate],
+    [navigate, canView, canEdit, canDeactivate, openView, handleDeactivate],
   )
 
   const handleChange = (e) => {
@@ -199,10 +201,12 @@ export function AnalysesPage() {
         title="Catálogo de análisis"
         description="Análisis del laboratorio con grupo, método, muestra y precio de catálogo."
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Nuevo análisis
-          </Button>
+          canCreate ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nuevo análisis
+            </Button>
+          ) : null
         }
       />
 
@@ -211,8 +215,8 @@ export function AnalysesPage() {
           <EmptyState
             title="Sin análisis"
             description="Registra el primer análisis del catálogo."
-            actionLabel="Nuevo análisis"
-            onAction={openCreate}
+            actionLabel={canCreate ? "Nuevo análisis" : undefined}
+            onAction={canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable

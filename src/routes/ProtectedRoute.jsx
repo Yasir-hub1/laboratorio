@@ -4,7 +4,11 @@ import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { ROUTES } from '@/utils/constants'
 import { storage } from '@/utils/storage'
 
-export function ProtectedRoute({ children, requireAccess = true, requireCash = true }) {
+/**
+ * Guard de sesión staff.
+ * requireCash = false por defecto (caja opcional tras select-access).
+ */
+export function ProtectedRoute({ children, requireAccess = true, requireCash = false }) {
   const { isAuthenticated, hasSelectedAccess, hasSelectedCash, sessionReady } = useAuth()
   const location = useLocation()
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Download, Loader2, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 import { OrderPdfPreviewModal } from '@/components/common/OrderPdfPreviewModal'
+import { PortalResultsPdfPreviewModal } from '@/components/portal/PortalResultsPdfPreviewModal'
 import { Modal, ModalFooter, Button } from '@/components/ui'
 import { laboratoryApi } from '@/services/laboratoryApi'
 import {
@@ -42,6 +43,19 @@ export function PdfPreviewModal({
         orderId={orderId}
         orderCode={orderCode}
         footerExtra={footerExtra}
+      />
+    )
+  }
+
+  // Informe de resultados: misma plantilla HTML que el portal paciente/seguro (§8)
+  if (pdfType === 'results') {
+    return (
+      <PortalResultsPdfPreviewModal
+        open={open}
+        onOpenChange={onOpenChange}
+        orderId={orderId}
+        orderCode={orderCode}
+        fetchPdfData={(id) => laboratoryApi.getOrderResultsPdfData(id)}
       />
     )
   }

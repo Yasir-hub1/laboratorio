@@ -9,6 +9,8 @@ import { cn } from '@/utils/cn'
 import { tapScale } from '@/utils/motion'
 import { NAV_GROUPS } from '@/utils/constants'
 import { getActiveNavGroupId, groupHasActiveItem } from '@/utils/nav'
+import { usePermission } from '@/hooks/usePermission'
+import { filterNavGroups } from '@/utils/permissions'
 
 const variantStyles = {
   sidebar: {
@@ -233,10 +235,10 @@ function NavGroupSection({
   const hasActive = groupHasActiveItem(pathname, group)
   const GroupIcon = Icons[group.icon] ?? Icons.Folder
   const displayLabel = group.shortLabel ?? group.label
+  /** Solo Inicio se aplana; el resto conserva el menú padre aunque quede 1 ítem tras filtrar permisos */
   const isPrincipal = group.id === 'inicio'
-  const isSingleItem = group.items.length === 1
 
-  if (isPrincipal || isSingleItem) {
+  if (isPrincipal) {
     const item = group.items[0]
     return (
       <div className={styles.group}>
@@ -346,9 +348,14 @@ export function NavMenu({
 }) {
   const styles = resolveStyles(variant, collapsed)
   const { pathname } = useLocation()
+  const { permissions } = usePermission()
+  const navGroups = useMemo(
+    () => filterNavGroups(NAV_GROUPS, permissions),
+    [permissions],
+  )
   const activeGroupId = useMemo(
-    () => getActiveNavGroupId(pathname, NAV_GROUPS),
-    [pathname],
+    () => getActiveNavGroupId(pathname, navGroups),
+    [pathname, navGroups],
   )
 
   const defaultOpen = useMemo(() => {
@@ -398,7 +405,7 @@ export function NavMenu({
         show: { transition: { staggerChildren: 0.045, delayChildren: 0.08 } },
       }}
     >
-      {NAV_GROUPS.map((group) => (
+      {navGroups.map((group) => (
         <motion.div
           key={group.id ?? group.label}
           variants={

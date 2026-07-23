@@ -71,10 +71,7 @@ export function SelectAccessPage() {
       return
     }
     if (hasSelectedAccess && storage.hasAccessContext()) {
-      navigate(
-        storage.hasCashContext() ? ROUTES.DASHBOARD : ROUTES.SELECT_CASH,
-        { replace: true },
-      )
+      navigate(ROUTES.DASHBOARD, { replace: true })
       return
     }
     loadAccessOptions()
@@ -100,7 +97,7 @@ export function SelectAccessPage() {
       const roleLabel = roles.find((r) => r.id === roleId)?.name ?? 'Rol'
 
       toast.success(`Acceso: ${branchLabel} · ${roleLabel}`)
-      navigate(ROUTES.SELECT_CASH, { replace: true })
+      navigate(ROUTES.DASHBOARD, { replace: true })
     } catch (err) {
       toast.error(err.message)
     }

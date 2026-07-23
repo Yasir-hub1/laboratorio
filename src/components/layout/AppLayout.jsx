@@ -1,11 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { LogOut, User } from 'lucide-react'
+import { LogOut, User, Wallet } from 'lucide-react'
 import { toast } from 'sonner'
 import { Sidebar } from './Sidebar'
 import { MobileTabBar } from './MobileTabBar'
 import { AppBackground } from './AppBackground'
 import { AnimatedOutlet } from '@/components/common/AnimatedOutlet'
 import { PWAUpdatePrompt } from '@/components/common/PWAUpdatePrompt'
+import { Can } from '@/components/auth/Can'
 import { Button } from '@/components/ui'
 import { SidebarProvider, useSidebar, SIDEBAR_WIDTH } from '@/context/SidebarContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -88,14 +89,21 @@ function AppLayoutContent() {
                 </div>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="shrink-0 text-muted"
-            >
-              <Link to={ROUTES.SELECT_CASH}>Caja</Link>
-            </Button>
+            <Can permission="caja.apertura-cierre.cambiar-caja">
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className="shrink-0 gap-1.5 text-muted"
+              >
+                <Link to={ROUTES.SELECT_CASH}>
+                  <Wallet className="h-4 w-4" aria-hidden />
+                  <span className="hidden sm:inline">
+                    {cashLabel ? `Caja: ${cashLabel}` : 'Elegir caja'}
+                  </span>
+                </Link>
+              </Button>
+            </Can>
             <Button
               variant="ghost"
               size="sm"

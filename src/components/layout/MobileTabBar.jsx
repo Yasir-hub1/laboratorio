@@ -1,15 +1,26 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'motion/react'
 import * as Icons from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { tapScale } from '@/utils/motion'
 import { TAB_BAR_ITEMS, isTabBarItemActive } from '@/utils/constants'
+import { usePermission } from '@/hooks/usePermission'
+import { canMenu } from '@/utils/permissions'
 import { MobileNavSheet } from './MobileNavSheet'
 
 export function MobileTabBar() {
   const { pathname } = useLocation()
   const [sheetOpen, setSheetOpen] = useState(false)
+  const { permissions } = usePermission()
+
+  const tabs = useMemo(
+    () =>
+      TAB_BAR_ITEMS.filter(
+        (item) => item.isMore || canMenu(permissions, item.permission),
+      ),
+    [permissions],
+  )
 
   return (
     <>
@@ -19,7 +30,7 @@ export function MobileTabBar() {
         aria-label="Navegación principal"
       >
         <div className="mx-auto flex h-[3.75rem] max-w-lg items-stretch justify-around px-1 sm:max-w-2xl sm:px-2">
-          {TAB_BAR_ITEMS.map((item) => {
+          {tabs.map((item) => {
             const Icon = Icons[item.icon] ?? Icons.Circle
             const isActive = item.isMore
               ? isTabBarItemActive(pathname, item) || sheetOpen
@@ -42,11 +53,17 @@ export function MobileTabBar() {
                   <motion.span
                     className={cn(
                       'flex h-9 w-9 items-center justify-center rounded-xl transition-colors sm:h-10 sm:w-10',
-                      isActive ? 'bg-primary text-primary-foreground shadow-soft' : 'bg-transparent',
+                      isActive
+                        ? 'bg-primary text-primary-foreground shadow-soft'
+                        : 'bg-transparent',
                     )}
                     whileTap={tapScale}
                   >
-                    <Icon className="h-5 w-5 shrink-0" strokeWidth={isActive ? 2.25 : 2} aria-hidden />
+                    <Icon
+                      className="h-5 w-5 shrink-0"
+                      strokeWidth={isActive ? 2.25 : 2}
+                      aria-hidden
+                    />
                   </motion.span>
                   <span className="truncate leading-none">{item.label}</span>
                   {isActive && !sheetOpen && (

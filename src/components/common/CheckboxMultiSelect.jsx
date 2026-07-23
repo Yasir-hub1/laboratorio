@@ -12,6 +12,7 @@ export function CheckboxMultiSelect({
   className,
   emptyMessage = 'Sin opciones disponibles.',
   countLabel = 'seleccionado',
+  selectAllLabel,
 }) {
   const selectedSet = new Set(value.map(String))
 
@@ -23,12 +24,27 @@ export function CheckboxMultiSelect({
     onChange(next)
   }
 
+  const selectAll = () => {
+    onChange(options.map((opt) => String(opt.id)).filter(Boolean))
+  }
+
   return (
     <div className={cn('space-y-1.5', className)}>
-      <p className="text-sm font-medium text-foreground">
-        {label}
-        {required && <span className="text-danger"> *</span>}
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium text-foreground">
+          {label}
+          {required && <span className="text-danger"> *</span>}
+        </p>
+        {selectAllLabel && options.length > 0 ? (
+          <button
+            type="button"
+            className="text-xs font-medium text-primary hover:underline"
+            onClick={selectAll}
+          >
+            {selectAllLabel}
+          </button>
+        ) : null}
+      </div>
       {options.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted">
           {emptyMessage}

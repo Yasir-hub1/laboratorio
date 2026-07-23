@@ -9,6 +9,7 @@ const KEYS = {
   CASH_NAME: 'biocontrol_cash_name',
   USER: 'biocontrol_user',
   ACCESS: 'biocontrol_access',
+  PERMISSIONS: 'biocontrol_permissions',
   PATIENT_TOKEN: 'biocontrol_patient_token',
   PATIENT: 'biocontrol_patient',
   INSURANCE_TOKEN: 'biocontrol_insurance_token',
@@ -37,6 +38,7 @@ export const storage = {
       KEYS.ROLE_ID,
       KEYS.BRANCH_NAME,
       KEYS.ROLE_NAME,
+      KEYS.PERMISSIONS,
       KEYS.OPENING_CASH_ID,
       KEYS.CASH_ID,
       KEYS.CASH_NAME,
@@ -92,6 +94,20 @@ export const storage = {
     else localStorage.removeItem(KEYS.ACCESS)
   },
 
+  getPermissions: () => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(KEYS.PERMISSIONS) ?? 'null')
+      return Array.isArray(raw) ? raw : []
+    } catch {
+      return []
+    }
+  },
+  setPermissions: (perms) => {
+    if (Array.isArray(perms)) localStorage.setItem(KEYS.PERMISSIONS, JSON.stringify(perms))
+    else localStorage.removeItem(KEYS.PERMISSIONS)
+  },
+  clearPermissions: () => localStorage.removeItem(KEYS.PERMISSIONS),
+
   getPatientToken: () => localStorage.getItem(KEYS.PATIENT_TOKEN),
   setPatientToken: (v) => localStorage.setItem(KEYS.PATIENT_TOKEN, v ?? ''),
   getPatient: () => {
@@ -144,6 +160,7 @@ export const storage = {
       KEYS.CASH_NAME,
       KEYS.USER,
       KEYS.ACCESS,
+      KEYS.PERMISSIONS,
     ].forEach((k) => localStorage.removeItem(k))
   },
 }

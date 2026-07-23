@@ -5,6 +5,7 @@ import { laboratoryApi } from '@/services/laboratoryApi'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
 import { useEntityView } from '@/hooks/useEntityView'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { EntityViewModal } from '@/components/common/EntityViewModal'
 import { PageHeader } from '@/components/common/PageHeader'
 import { AnimatedPage } from '@/components/common/AnimatedPage'
@@ -33,10 +34,20 @@ const EMPTY_FORM = {
   last_name: '',
   phone: '',
   email: '',
-  password: '',
   gender: '',
   birth_date: '',
   address: '',
+}
+
+/** Contraseña portal automática: 2 letras del nombre + . + 2 dígitos del CI + .* */
+function portalPasswordHint(firstName, ci) {
+  const letters = String(firstName ?? '')
+    .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '')
+    .slice(0, 2)
+    .toUpperCase()
+  const digits = String(ci ?? '').replace(/\D/g, '').slice(0, 2)
+  if (letters.length < 2 || digits.length < 2) return null
+  return `${letters}.${digits}.*`
 }
 
 const STATUS_FILTER_OPTIONS = [
@@ -68,7 +79,6 @@ function rowToForm(row) {
     last_name: row.last_name ?? '',
     phone: row.phone ?? '',
     email: row.email ?? '',
-    password: '',
     gender: genderToFormValue(row.gender),
     birth_date: row.birth_date ? String(row.birth_date).slice(0, 10) : '',
     address: row.address ?? '',
@@ -96,6 +106,7 @@ function patientDetailFields(data) {
 }
 
 export function PatientsPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('gestion-clinica.pacientes')
   const { confirm } = useConfirmAction()
   const [statusFilter, setStatusFilter] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
@@ -210,14 +221,14 @@ export function PatientsPage() {
         header: 'Acciones',
         cell: ({ row }) => (
           <RowActions
-            onView={() => openView(row.original)}
-            onEdit={() => openEdit(row.original)}
-            onDelete={() => handleDelete(row.original)}
+            onView={canView ? () => openView(row.original) : undefined}
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDelete ? () => handleDelete(row.original) : undefined}
           />
         ),
       },
     ],
-    [openView, handleDelete],
+    [canView, canEdit, canDelete, openView, handleDelete],
   )
 
   const handleChange = (e) => {
@@ -225,14 +236,16 @@ export function PatientsPage() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
+  const autoPortalPassword = !editing ? portalPasswordHint(form.first_name, form.ci) : null
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
     try {
+      // Sin password: el backend genera la del portal (2 letras nombre + . + 2 dígitos CI + .*)
       const payload = buildPatientPayload(form)
       if (editing) {
         const id = resolveEntityId(editing)
-        if (!form.password) delete payload.password
         await laboratoryApi.updatePatient(id, payload)
         toastApiSuccess('Paciente actualizado')
       } else {
@@ -258,10 +271,12 @@ export function PatientsPage() {
         title="Pacientes"
         description="Registro de pacientes del laboratorio. Busca por CI, nombre, teléfono o email."
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Nuevo paciente
-          </Button>
+          canCreate ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nuevo paciente
+            </Button>
+          ) : null
         }
       />
 
@@ -292,8 +307,8 @@ export function PatientsPage() {
                   ? 'No hay pacientes inactivos con este criterio.'
                   : 'Registra el primer paciente del laboratorio.'
             }
-            actionLabel={statusFilter === 'all' ? 'Nuevo paciente' : undefined}
-            onAction={statusFilter === 'all' ? openCreate : undefined}
+            actionLabel={statusFilter === 'all' && canCreate ? 'Nuevo paciente' : undefined}
+            onAction={statusFilter === 'all' && canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable
@@ -309,7 +324,7 @@ export function PatientsPage() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         title={editing ? 'Editar paciente' : 'Nuevo paciente'}
-        description="Datos demográficos y de contacto."
+        description="Datos demográficos y de contacto. La contraseña del portal se genera automáticamente."
       >
         <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
           <Input label="CI" name="ci" value={form.ci} onChange={handleChange} required />
@@ -336,14 +351,6 @@ export function PatientsPage() {
             onChange={handleChange}
             required
           />
-          <Input
-            label={editing ? 'Contraseña (dejar vacío para no cambiar)' : 'Contraseña'}
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={handleChange}
-            required={!editing}
-          />
           <Select label="Género" name="gender" value={form.gender} onChange={handleChange}>
             <option value="">Seleccionar</option>
             <option value="M">Masculino</option>
@@ -363,6 +370,12 @@ export function PatientsPage() {
             value={form.address}
             onChange={handleChange}
           />
+          {autoPortalPassword ? (
+            <p className="sm:col-span-2 text-sm text-muted">
+              Contraseña portal (automática):{' '}
+              <span className="font-mono font-medium text-foreground">{autoPortalPassword}</span>
+            </p>
+          ) : null}
           <ModalFooter className="sm:col-span-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               Cancelar
@@ -386,7 +399,7 @@ export function PatientsPage() {
         loading={detailLoading}
         data={selected}
         fields={patientDetailFields(selected)}
-        onToggleStatus={handleToggleStatus}
+        onToggleStatus={canDeactivate ? handleToggleStatus : undefined}
         statusToggling={statusToggling}
       />
     </AnimatedPage>

@@ -498,8 +498,8 @@ export function OrderWorkflowDrawer({ order, open, onOpenChange, onSuccess }) {
             <>
               {/* Resumen orden */}
               <OrderStatGrid>
-                <OrderStat label="Paciente" value={patientName} />
-                <OrderStat label="Código" value={orderInfo?.code} />
+                {/* <OrderStat label="Paciente" value={patientName} />
+                <OrderStat label="Código" value={orderInfo?.code} /> */}
                 {/* {(ws === 1 || ws === 4 || ws === 5 || ws === 6) && (
                   <OrderStat
                     label="Fecha toma"

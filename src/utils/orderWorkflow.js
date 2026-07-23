@@ -1,4 +1,5 @@
 import { ORDER_WORKFLOW_STATUS } from '@/utils/constants'
+import { ORDER_QUEUE_PERMISSIONS } from '@/utils/permissions'
 
 /** Pestañas de Gestionar orden (§4.4). */
 export const ORDER_WORKFLOW_TABS = [
@@ -177,16 +178,32 @@ export function collectSaveEntries(summary, values) {
       for (const component of subgroup.components ?? []) {
         const componentId = component.component_analysis_id ?? component.id
         const key = `${sampleAnalysisId}:${componentId}`
-        const value = values[key]
-        if (value == null || value === '') continue
+        const draft = values[key] ?? {}
+        const value =
+          typeof draft === 'object' && draft != null && !Array.isArray(draft)
+            ? draft.value_obtained
+            : draft
+        if (value == null || String(value).trim() === '') continue
 
         if (!bySample.has(sampleAnalysisId)) {
           bySample.set(sampleAnalysisId, [])
         }
-        bySample.get(sampleAnalysisId).push({
+        const row = {
           component_analysis_id: componentId,
           value_obtained: value,
-        })
+        }
+        if (typeof draft === 'object' && draft != null) {
+          if (draft.valor_ref_min != null && draft.valor_ref_min !== '') {
+            row.valor_ref_min = draft.valor_ref_min
+          }
+          if (draft.valor_ref_max != null && draft.valor_ref_max !== '') {
+            row.valor_ref_max = draft.valor_ref_max
+          }
+          if (draft.unit_measurement != null && draft.unit_measurement !== '') {
+            row.unit_measurement = draft.unit_measurement
+          }
+        }
+        bySample.get(sampleAnalysisId).push(row)
       }
     }
   }
@@ -195,4 +212,54 @@ export function collectSaveEntries(summary, values) {
     sample_analysis_id,
     results,
   }))
+}
+
+export function doctorDisplayName(doctor) {
+  if (!doctor) return null
+  return (
+    doctor.full_name ||
+    doctor.name ||
+    [doctor.first_name, doctor.last_name].filter(Boolean).join(' ') ||
+    null
+  )
+}
+
+/** Formato listado: `Nombre (CI)` — paciente o médico. */
+export function personNameWithCi(person, fallbackName) {
+  if (!person && !fallbackName) return '—'
+  const name =
+    (person &&
+      (person.full_name ||
+        person.name ||
+        [person.first_name, person.last_name].filter(Boolean).join(' '))) ||
+    fallbackName ||
+    null
+  const ci = person?.ci != null ? String(person.ci).trim() : ''
+  if (name && ci) return `${name} (${ci})`
+  return name || '—'
+}
+
+export function genderLabel(gender) {
+  const g = String(gender ?? '').trim().toUpperCase()
+  if (g === 'M' || g === 'MASCULINO' || g === 'MALE') return 'Masculino'
+  if (g === 'F' || g === 'FEMENINO' || g === 'FEMALE') return 'Femenino'
+  return gender ? String(gender) : '—'
+}
+
+/** Tras transición: ¿puede quedarse en el formulario del estado destino? */
+export function canStayOnWorkflowForm(workflowStatus, canFn) {
+  const perm = ORDER_QUEUE_PERMISSIONS[Number(workflowStatus)]
+  return perm ? Boolean(canFn?.(perm)) : false
+}
+
+export function orderWorkflowPath(orderId) {
+  return `/atencion/gestionar-orden/${orderId}/gestionar`
+}
+
+export function orderDetailPath(orderId) {
+  return `/atencion/gestionar-orden/${orderId}`
+}
+
+export function analysesWithoutComponents(summary) {
+  return (summary?.analyses ?? []).filter((a) => flattenComponents(a).length === 0)
 }

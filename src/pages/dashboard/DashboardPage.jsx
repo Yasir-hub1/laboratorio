@@ -9,25 +9,24 @@ import {
   ClipboardList,
   CreditCard,
   FileText,
-  FlaskConical,
   Plus,
-  Syringe,
   TrendingUp,
   UserCircle,
   Wallet,
 } from 'lucide-react'
-import { toast } from 'sonner'
 import { AnimatedPage } from '@/components/common/AnimatedPage'
 import { PageHeader } from '@/components/common/PageHeader'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
+import { Can } from '@/components/auth/Can'
 import { Badge, Card, CardDescription, CardHeader, CardTitle } from '@/components/ui'
-import { useIndexQuery } from '@/hooks/useIndexQuery'
-import { fetchCashFlowSummary } from '@/services/cashFlow.service'
 import { laboratoryApi } from '@/services/laboratoryApi'
 import { useAuth } from '@/hooks/useAuth'
+import { usePermission } from '@/hooks/usePermission'
 import { formatCurrency, formatDateTime } from '@/utils/apiHelpers'
 import { cn } from '@/utils/cn'
-import { ORDER_STATUS, ROUTES, TAB_BAR_ITEMS } from '@/utils/constants'
+import { ORDER_STATUS, ORDER_WORKFLOW_STATUS, ROUTES, TAB_BAR_ITEMS } from '@/utils/constants'
+import { canMenu } from '@/utils/permissions'
+import { toastApiError } from '@/utils/toastApi'
 import * as TabIcons from 'lucide-react'
 
 const statStyles = {
@@ -46,19 +45,45 @@ const statStyles = {
     iconBg: 'bg-primary-soft text-primary',
     value: 'text-primary',
   },
-  source: {
-    icon: FlaskConical,
+  active: {
+    icon: ClipboardList,
     iconBg: 'bg-indigo-50 text-indigo-600',
-    value: 'text-sm font-medium text-foreground sm:text-lg',
+    value: 'text-foreground',
   },
 }
 
 const quickLinks = [
-  { to: ROUTES.ORDER_RECEPTION, label: 'Nueva orden', icon: Plus, highlight: true },
-  { to: ROUTES.ORDER_MANAGEMENT, label: 'Gestión de Órdenes', icon: ClipboardList },
-  { to: ROUTES.QUOTATIONS, label: 'Cotizar', icon: FileText },
-  { to: ROUTES.PATIENTS, label: 'Pacientes', icon: UserCircle },
-  { to: ROUTES.OPEN_CASH, label: 'Caja', icon: Wallet },
+  {
+    to: ROUTES.ORDER_RECEPTION,
+    label: 'Nueva orden',
+    icon: Plus,
+    highlight: true,
+    permission: 'atencion.nueva-orden',
+  },
+  {
+    to: ROUTES.ORDER_MANAGEMENT,
+    label: 'Gestionar orden',
+    icon: ClipboardList,
+    permission: 'atencion.gestion-ordenes',
+  },
+  {
+    to: ROUTES.QUOTATIONS,
+    label: 'Cotizar',
+    icon: FileText,
+    permission: 'atencion.cotizaciones',
+  },
+  {
+    to: ROUTES.PATIENTS,
+    label: 'Pacientes',
+    icon: UserCircle,
+    permission: 'gestion-clinica.pacientes',
+  },
+  {
+    to: ROUTES.OPEN_CASH,
+    label: 'Caja',
+    icon: Wallet,
+    permission: 'caja.apertura-cierre',
+  },
 ]
 
 function personLabel(p) {
@@ -71,16 +96,23 @@ function personLabel(p) {
   )
 }
 
-function isToday(value) {
-  if (!value) return false
-  const d = new Date(value)
-  const now = new Date()
-  return d.toDateString() === now.toDateString()
-}
+function orderStatusBadge(order) {
+  const workflowKey = order.workflow_status
+  if (workflowKey != null && ORDER_WORKFLOW_STATUS[workflowKey]) {
+    const info = ORDER_WORKFLOW_STATUS[workflowKey]
+    const variant =
+      info.color === 'emerald'
+        ? 'success'
+        : info.color === 'red'
+          ? 'danger'
+          : info.color === 'amber'
+            ? 'warning'
+            : 'info'
+    return <Badge variant={variant}>{info.label}</Badge>
+  }
 
-function orderStatusBadge(status) {
-  const key = status ?? 0
-  const info = ORDER_STATUS[key] ?? { label: String(status), color: 'default' }
+  const key = order.status ?? 0
+  const info = ORDER_STATUS[key] ?? { label: String(order.status), color: 'default' }
   const variant =
     info.color === 'emerald'
       ? 'success'
@@ -103,66 +135,49 @@ const fadeUp = {
 
 export function DashboardPage() {
   const { user, branchId, branchName, cashName } = useAuth()
-  const [summary, setSummary] = useState(null)
-  const [summaryLoading, setSummaryLoading] = useState(true)
+  const { permissions } = usePermission()
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  const { items: orders, loading: ordersLoading, error: ordersError } = useIndexQuery(
-    laboratoryApi.getLaboratoryOrders,
-    { initialPerPage: 5 },
+  const visibleTabs = useMemo(
+    () => TAB_BAR_ITEMS.filter((t) => !t.isMore && canMenu(permissions, t.permission)),
+    [permissions],
+  )
+  const visibleQuickLinks = useMemo(
+    () => quickLinks.filter((link) => canMenu(permissions, link.permission)),
+    [permissions],
   )
 
-  const loadSummary = useCallback(async () => {
+  const loadDashboard = useCallback(async () => {
     if (!branchId) {
-      setSummary(null)
-      setSummaryLoading(false)
+      setData(null)
+      setLoading(false)
       return
     }
-    setSummaryLoading(true)
+    setLoading(true)
     try {
-      const cashData = await fetchCashFlowSummary()
-      setSummary(cashData)
+      const payload = await laboratoryApi.getDashboard({ orders_limit: 5 })
+      setData(payload)
     } catch (err) {
-      toast.error(err.message)
+      toastApiError(err)
+      setData(null)
     } finally {
-      setSummaryLoading(false)
+      setLoading(false)
     }
   }, [branchId])
 
   useEffect(() => {
-    loadSummary()
-  }, [loadSummary])
+    loadDashboard()
+  }, [loadDashboard])
 
-  useEffect(() => {
-    if (ordersError) toast.error(ordersError)
-  }, [ordersError])
-
-  const activeOrders = useMemo(
-    () => orders.filter((o) => o.status !== 4),
-    [orders],
-  )
-
-  const pipeline = useMemo(
-    () => ({
-      registered: activeOrders.filter((o) => o.status === 0).length,
-      inLab: activeOrders.filter((o) => o.status === 1 || o.status === 2).length,
-      completedToday: activeOrders.filter((o) => o.status === 3 && isToday(o.created_at)).length,
-    }),
-    [activeOrders],
-  )
-
-  const pendingOrders = useMemo(
-    () =>
-      [...activeOrders]
-        .filter((o) => o.status !== 3)
-        .sort(
-          (a, b) =>
-            new Date(b.created_at ?? b.date ?? 0) - new Date(a.created_at ?? a.date ?? 0),
-        )
-        .slice(0, 6),
-    [activeOrders],
-  )
-
-  const loading = summaryLoading || ordersLoading
+  const cashSummary = data?.cash_summary ?? null
+  const orders = Array.isArray(data?.orders) ? data.orders : []
+  const pipeline = data?.pipeline ?? {
+    registered: 0,
+    in_lab: 0,
+    completed_today: 0,
+    active_total: 0,
+  }
 
   if (loading) return <LoadingScreen />
 
@@ -170,28 +185,36 @@ export function DashboardPage() {
     {
       key: 'income',
       label: 'Ingresos del día',
-      value: formatCurrency(summary?.total_inflows ?? 0),
+      value: formatCurrency(
+        cashSummary?.total_inflow ?? cashSummary?.total_inflows ?? 0,
+      ),
       style: statStyles.income,
     },
     {
       key: 'expense',
       label: 'Egresos del día',
-      value: formatCurrency(summary?.total_outflows ?? 0),
+      value: formatCurrency(
+        cashSummary?.total_outflow ?? cashSummary?.total_outflows ?? 0,
+      ),
       style: statStyles.expense,
     },
     {
       key: 'balance',
       label: 'Saldo caja',
-      value: formatCurrency(summary?.balance ?? 0),
+      value: formatCurrency(
+        cashSummary?.balance ?? cashSummary?.total_current_amount ?? 0,
+      ),
       style: statStyles.balance,
     },
     {
-      key: 'source',
-      label: 'Fuente datos',
-      value: summary?.source ?? '—',
-      style: statStyles.source,
+      key: 'active',
+      label: 'Órdenes activas',
+      value: String(pipeline.active_total ?? 0),
+      style: statStyles.active,
     },
   ]
+
+  const activeTotal = Number(pipeline.active_total ?? 0)
 
   return (
     <AnimatedPage>
@@ -215,7 +238,7 @@ export function DashboardPage() {
       >
         <p className="mb-2 text-xs font-medium text-muted">Navegación rápida</p>
         <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {TAB_BAR_ITEMS.filter((t) => !t.isMore).map((tab) => {
+          {visibleTabs.map((tab) => {
             const TabIcon = TabIcons[tab.icon] ?? TabIcons.Circle
             return (
               <NavLink
@@ -271,9 +294,9 @@ export function DashboardPage() {
           <CardHeader>
             <CardTitle>Órdenes en curso</CardTitle>
             <CardDescription>
-              {activeOrders.length === 0
+              {activeTotal === 0
                 ? 'No hay órdenes activas en el sistema'
-                : `${activeOrders.length} orden${activeOrders.length === 1 ? '' : 'es'} activa${activeOrders.length === 1 ? '' : 's'}`}
+                : `${activeTotal} orden${activeTotal === 1 ? '' : 'es'} activa${activeTotal === 1 ? '' : 's'}`}
             </CardDescription>
           </CardHeader>
 
@@ -282,14 +305,18 @@ export function DashboardPage() {
               to={`${ROUTES.ORDER_MANAGEMENT}?tab=1`}
               className="glass-list-item flex flex-col items-center gap-1 px-2 py-3 text-center transition-colors hover:border-amber-200/60 hover:bg-amber-50/50"
             >
-              <span className="text-xl font-bold tabular-nums text-amber-700">{pipeline.registered}</span>
-              <span className="text-[11px] font-medium leading-tight text-muted">Sin muestra</span>
+              <span className="text-xl font-bold tabular-nums text-amber-700">
+                {pipeline.registered ?? 0}
+              </span>
+              <span className="text-[11px] font-medium leading-tight text-muted">Registradas</span>
             </Link>
             <Link
               to={`${ROUTES.ORDER_MANAGEMENT}?tab=2`}
               className="glass-list-item flex flex-col items-center gap-1 px-2 py-3 text-center transition-colors hover:border-indigo-200/60 hover:bg-indigo-50/50"
             >
-              <span className="text-xl font-bold tabular-nums text-indigo-700">{pipeline.inLab}</span>
+              <span className="text-xl font-bold tabular-nums text-indigo-700">
+                {pipeline.in_lab ?? 0}
+              </span>
               <span className="text-[11px] font-medium leading-tight text-muted">En laboratorio</span>
             </Link>
             <Link
@@ -297,19 +324,19 @@ export function DashboardPage() {
               className="glass-list-item flex flex-col items-center gap-1 px-2 py-3 text-center transition-colors hover:border-emerald-200/60 hover:bg-emerald-50/50"
             >
               <span className="text-xl font-bold tabular-nums text-emerald-700">
-                {pipeline.completedToday}
+                {pipeline.completed_today ?? 0}
               </span>
               <span className="text-[11px] font-medium leading-tight text-muted">Completadas hoy</span>
             </Link>
           </div>
 
-          {pendingOrders.length === 0 ? (
+          {orders.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border/80 bg-surface/40 px-4 py-8 text-center text-sm text-muted">
-              No hay órdenes pendientes. Puedes registrar una nueva desde acciones rápidas.
+              No hay órdenes recientes. Puedes registrar una nueva desde acciones rápidas.
             </p>
           ) : (
             <ul className="space-y-2">
-              {pendingOrders.map((order, i) => (
+              {orders.map((order, i) => (
                 <motion.li
                   key={order.id}
                   custom={i}
@@ -327,16 +354,18 @@ export function DashboardPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <p className="min-w-0 truncate text-sm font-medium text-foreground">
-                          {personLabel(order.patient) ?? order.patient_name ?? 'Paciente'}
+                          {personLabel(order.patient) !== '—'
+                            ? personLabel(order.patient)
+                            : (order.patient_name ?? 'Paciente')}
                         </p>
-                        <div className="shrink-0">{orderStatusBadge(order.status)}</div>
+                        <div className="shrink-0">{orderStatusBadge(order)}</div>
                       </div>
                       <p className="mt-0.5 truncate text-xs text-muted">
                         {order.code ? (
                           <span className="font-mono text-[11px] text-foreground/80">{order.code}</span>
                         ) : null}
                         {order.code ? ' · ' : ''}
-                        {formatDateTime(order.created_at ?? order.date)}
+                        {formatDateTime(order.updated_at ?? order.created_at ?? order.date)}
                         {order.total != null || order.amount != null
                           ? ` · ${formatCurrency(order.total ?? order.amount)}`
                           : ''}
@@ -348,13 +377,15 @@ export function DashboardPage() {
             </ul>
           )}
 
-          <Link
-            to={ROUTES.ORDER_MANAGEMENT}
-            className="link-primary mt-4 inline-flex items-center gap-1.5 text-sm font-medium"
-          >
-            Ver todas las órdenes
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
+          <Can permission="atencion.gestion-ordenes.listar">
+            <Link
+              to={ROUTES.ORDER_MANAGEMENT}
+              className="link-primary mt-4 inline-flex items-center gap-1.5 text-sm font-medium"
+            >
+              Ver todas las órdenes
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </Can>
         </Card>
 
         <Card>
@@ -363,7 +394,7 @@ export function DashboardPage() {
             <CardDescription>Ir directo a la tarea que necesitas</CardDescription>
           </CardHeader>
           <div className="grid grid-cols-2 gap-2">
-            {quickLinks.map((link) => (
+            {visibleQuickLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
@@ -397,20 +428,24 @@ export function DashboardPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2 border-t border-white/40 pt-4">
-            <Link
-              to={ROUTES.CASH_FLOW}
-              className="glass-chip inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted transition-colors hover:bg-white/55 hover:text-primary"
-            >
-              <ArrowDownLeft className="h-3.5 w-3.5" aria-hidden />
-              Flujo de caja
-            </Link>
-            <Link
-              to={ROUTES.PAYMENTS}
-              className="glass-chip inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted transition-colors hover:bg-white/55 hover:text-primary"
-            >
-              <CreditCard className="h-3.5 w-3.5" aria-hidden />
-              Pagos
-            </Link>
+            <Can permission="caja.flujo-caja.listar">
+              <Link
+                to={ROUTES.CASH_FLOW}
+                className="glass-chip inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted transition-colors hover:bg-white/55 hover:text-primary"
+              >
+                <ArrowDownLeft className="h-3.5 w-3.5" aria-hidden />
+                Flujo de caja
+              </Link>
+            </Can>
+            <Can permission="cobros.pagos.listar">
+              <Link
+                to={ROUTES.PAYMENTS}
+                className="glass-chip inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted transition-colors hover:bg-white/55 hover:text-primary"
+              >
+                <CreditCard className="h-3.5 w-3.5" aria-hidden />
+                Pagos
+              </Link>
+            </Can>
           </div>
         </Card>
       </div>

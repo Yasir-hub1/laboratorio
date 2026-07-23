@@ -35,11 +35,11 @@ const fieldMotion = {
 export function SelectCashPage() {
   const {
     setCashContext,
+    clearCashContext,
     setOpeningCash,
     resetSessionAccess,
     branchName,
     roleName,
-    hasSelectedCash,
     isLoading: authLoading,
   } = useAuth()
   const navigate = useNavigate()
@@ -107,12 +107,8 @@ export function SelectCashPage() {
       navigate(ROUTES.SELECT_ACCESS, { replace: true })
       return
     }
-    if (hasSelectedCash && storage.hasCashContext() && storage.getOpeningCashId()) {
-      navigate(ROUTES.DASHBOARD, { replace: true })
-      return
-    }
     loadCashes()
-  }, [hasSelectedCash, loadCashes, navigate])
+  }, [loadCashes, navigate])
 
   useEffect(() => {
     if (!cashId) {
@@ -245,8 +241,8 @@ export function SelectCashPage() {
 
           {cashes.length === 0 ? (
             <p className="rounded-xl border border-amber-200/80 bg-amber-50/80 p-4 text-sm text-amber-900">
-              No tienes cajas asignadas en esta sucursal. Un administrador debe crear la caja en
-              Caja y asignártela en Usuarios.
+              No tienes cajas asignadas en esta sucursal. Puedes continuar sin caja y elegirla
+              después desde el encabezado o Apertura / Cierre.
             </p>
           ) : (
             <>
@@ -367,7 +363,7 @@ export function SelectCashPage() {
             </>
           )}
 
-          <motion.div variants={fieldMotion} className="flex flex-col gap-2 sm:flex-row">
+          <motion.div variants={fieldMotion} className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button
               type="button"
               variant="secondary"
@@ -376,6 +372,19 @@ export function SelectCashPage() {
               disabled={submitting || authLoading}
             >
               Cambiar sucursal
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="flex-1"
+              disabled={submitting || authLoading}
+              onClick={() => {
+                clearCashContext()
+                toast.success('Continuaste sin caja')
+                navigate(ROUTES.DASHBOARD, { replace: true })
+              }}
+            >
+              Continuar sin caja
             </Button>
             <Button
               type="submit"

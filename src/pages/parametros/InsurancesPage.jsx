@@ -5,6 +5,7 @@ import { laboratoryApi } from '@/services/laboratoryApi'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
 import { useEntityView } from '@/hooks/useEntityView'
+import { useCrudPermission, usePermission } from '@/hooks/usePermission'
 import { PageHeader } from '@/components/common/PageHeader'
 import { AnimatedPage } from '@/components/common/AnimatedPage'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
@@ -49,6 +50,10 @@ function insuranceDetailFields(data) {
 export function InsurancesPage() {
   const navigate = useNavigate()
   const { confirm } = useConfirmAction()
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } =
+    useCrudPermission('gestion-clinica.seguros')
+  const { can } = usePermission()
+  const canAssignPrices = can('gestion-clinica.seguros.asignar-precios')
   const [statusFilter, setStatusFilter] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -155,21 +160,25 @@ export function InsurancesPage() {
         header: 'Acciones',
         cell: ({ row }) => (
           <RowActions
-            onView={() => openView(row.original)}
-            onEdit={() => openEdit(row.original)}
-            onDelete={() => handleDelete(row.original)}
-            onExtra={() => {
-              const insuranceId = resolveEntityId(row.original)
-              if (insuranceId) {
-                navigate(ROUTES.INSURANCE_PRICES.replace(':id', insuranceId))
-              }
-            }}
+            onView={canView ? () => openView(row.original) : undefined}
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDelete ? () => handleDelete(row.original) : undefined}
+            onExtra={
+              canAssignPrices
+                ? () => {
+                    const insuranceId = resolveEntityId(row.original)
+                    if (insuranceId) {
+                      navigate(ROUTES.INSURANCE_PRICES.replace(':id', insuranceId))
+                    }
+                  }
+                : undefined
+            }
             extraLabel="Asignar precios"
           />
         ),
       },
     ],
-    [navigate, openView, handleDelete],
+    [navigate, canView, canEdit, canDelete, canAssignPrices, openView, handleDelete],
   )
 
   const handleChange = (e) => {
@@ -209,13 +218,17 @@ export function InsurancesPage() {
         description="Aseguradoras y tarifas convenidas por análisis. Usa «Asignar precios» en cada fila."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" asChild>
-              <Link to={ROUTES.INSURANCE_CATALOG_PRICES}>Precios sin seguro</Link>
-            </Button>
-            <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" />
-              Nuevo seguro
-            </Button>
+            {canAssignPrices ? (
+              <Button variant="secondary" asChild>
+                <Link to={ROUTES.INSURANCE_CATALOG_PRICES}>Precios sin seguro</Link>
+              </Button>
+            ) : null}
+            {canCreate ? (
+              <Button onClick={openCreate}>
+                <Plus className="h-4 w-4" />
+                Nuevo seguro
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -247,8 +260,8 @@ export function InsurancesPage() {
                   ? 'No hay seguros inactivos con este criterio.'
                   : 'Registra la primera aseguradora para el laboratorio.'
             }
-            actionLabel={statusFilter === 'all' ? 'Nuevo seguro' : undefined}
-            onAction={statusFilter === 'all' ? openCreate : undefined}
+            actionLabel={statusFilter === 'all' && canCreate ? 'Nuevo seguro' : undefined}
+            onAction={statusFilter === 'all' && canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable
@@ -268,10 +281,10 @@ export function InsurancesPage() {
         loading={detailLoading}
         data={selected}
         fields={insuranceDetailFields(selected)}
-        onToggleStatus={handleToggleStatus}
+        onToggleStatus={canDeactivate ? handleToggleStatus : undefined}
         statusToggling={statusToggling}
         footerExtra={
-          resolveEntityId(selected) ? (
+          canAssignPrices && resolveEntityId(selected) ? (
             <Button
               type="button"
               variant="secondary"

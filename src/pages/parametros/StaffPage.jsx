@@ -7,6 +7,7 @@ import { useApiList } from '@/hooks/useApiList'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
 import { useEntityView } from '@/hooks/useEntityView'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { EntityViewModal } from '@/components/common/EntityViewModal'
 import { PageHeader } from '@/components/common/PageHeader'
 import { AnimatedPage } from '@/components/common/AnimatedPage'
@@ -71,6 +72,7 @@ function staffDisplayName(row) {
 }
 
 export function StaffPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('gestion-clinica.personal')
   const { confirm } = useConfirmAction()
   const [statusFilter, setStatusFilter] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
@@ -177,14 +179,14 @@ export function StaffPage() {
         header: 'Acciones',
         cell: ({ row }) => (
           <RowActions
-            onView={() => openView(row.original)}
-            onEdit={() => openEdit(row.original)}
-            onDelete={() => handleDelete(row.original)}
+            onView={canView ? () => openView(row.original) : undefined}
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDelete ? () => handleDelete(row.original) : undefined}
           />
         ),
       },
     ],
-    [openView, handleDelete],
+    [canView, canEdit, canDelete, openView, handleDelete],
   )
 
   const handleChange = (e) => {
@@ -223,10 +225,12 @@ export function StaffPage() {
         title="Personal"
         description="Personal administrativo y técnico del laboratorio."
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Nuevo personal
-          </Button>
+          canCreate ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nuevo personal
+            </Button>
+          ) : null
         }
       />
 
@@ -257,8 +261,8 @@ export function StaffPage() {
                   ? 'No hay personal inactivo con este criterio.'
                   : 'Registra colaboradores del laboratorio.'
             }
-            actionLabel={statusFilter === 'all' ? 'Nuevo personal' : undefined}
-            onAction={statusFilter === 'all' ? openCreate : undefined}
+            actionLabel={statusFilter === 'all' && canCreate ? 'Nuevo personal' : undefined}
+            onAction={statusFilter === 'all' && canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable
@@ -336,7 +340,7 @@ export function StaffPage() {
         loading={detailLoading}
         data={selected}
         fields={staffDetailFields(selected)}
-        onToggleStatus={handleToggleStatus}
+        onToggleStatus={canDeactivate ? handleToggleStatus : undefined}
         statusToggling={statusToggling}
       />
     </AnimatedPage>

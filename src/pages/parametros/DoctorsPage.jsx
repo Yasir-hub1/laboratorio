@@ -7,6 +7,7 @@ import { useApiList } from '@/hooks/useApiList'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
 import { useEntityView } from '@/hooks/useEntityView'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { EntityViewModal } from '@/components/common/EntityViewModal'
 import { SpecialtyMultiSelect } from '@/components/common/SpecialtyMultiSelect'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -76,6 +77,7 @@ function SpecialtyBadges({ ids, specialtyMap }) {
 }
 
 export function DoctorsPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('gestion-clinica.medicos')
   const { confirm } = useConfirmAction()
   const [statusFilter, setStatusFilter] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
@@ -244,14 +246,14 @@ export function DoctorsPage() {
         header: 'Acciones',
         cell: ({ row }) => (
           <RowActions
-            onView={() => openView(row.original)}
-            onEdit={() => openEdit(row.original)}
-            onDelete={() => handleDelete(row.original)}
+            onView={canView ? () => openView(row.original) : undefined}
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDelete ? () => handleDelete(row.original) : undefined}
           />
         ),
       },
     ],
-    [specialtyMap, openView, openEdit, handleDelete],
+    [specialtyMap, canView, canEdit, canDelete, openView, openEdit, handleDelete],
   )
 
   const handleChange = (e) => {
@@ -300,10 +302,12 @@ export function DoctorsPage() {
         title="Médicos"
         description="Médicos referentes. Cada uno puede tener varias especialidades."
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Nuevo médico
-          </Button>
+          canCreate ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nuevo médico
+            </Button>
+          ) : null
         }
       />
 
@@ -334,8 +338,8 @@ export function DoctorsPage() {
                   ? 'No hay médicos inactivos con este criterio.'
                   : 'Registra médicos referentes del laboratorio.'
             }
-            actionLabel={statusFilter === 'all' ? 'Nuevo médico' : undefined}
-            onAction={statusFilter === 'all' ? openCreate : undefined}
+            actionLabel={statusFilter === 'all' && canCreate ? 'Nuevo médico' : undefined}
+            onAction={statusFilter === 'all' && canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable
@@ -410,7 +414,7 @@ export function DoctorsPage() {
         loading={detailLoading}
         data={selected}
         fields={doctorDetailFields(selected)}
-        onToggleStatus={handleToggleStatus}
+        onToggleStatus={canDeactivate ? handleToggleStatus : undefined}
         statusToggling={statusToggling}
       >
         {!detailLoading && selected && (

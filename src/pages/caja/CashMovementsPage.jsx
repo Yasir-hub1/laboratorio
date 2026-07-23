@@ -8,6 +8,7 @@ import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Badge, Button, Card, DataTable, Input, Modal, ModalFooter, Select } from '@/components/ui'
 import { laboratoryApi } from '@/services/laboratoryApi'
+import { usePermission } from '@/hooks/usePermission'
 import { formatCurrency } from '@/utils/apiHelpers'
 import { buildCashInflowPayload, buildCashOutflowPayload } from '@/utils/apiPayload'
 import { ROUTES } from '@/utils/constants'
@@ -27,6 +28,10 @@ function splitDateTime(value) {
 
 export function CashMovementsPage() {
   const navigate = useNavigate()
+  const { can } = usePermission()
+  const canInflow = can('caja.movimientos.ingresar')
+  const canOutflow = can('caja.movimientos.egresar')
+  const canAnnul = can('caja.movimientos.anular')
   const openingId = storage.getOpeningCashId()
   const [filtersMeta, setFiltersMeta] = useState(null)
   const [movements, setMovements] = useState([])
@@ -228,7 +233,7 @@ export function CashMovementsPage() {
           const m = row.original
           const annulled =
             Number(m.status) === 2 || m.is_annulled === true || m.annulled === true
-          if (annulled) return '—'
+          if (annulled || !canAnnul) return '—'
           const kind = m.kind ?? m.movement_type
           return (
             <Button
@@ -253,7 +258,7 @@ export function CashMovementsPage() {
         },
       },
     ],
-    [detail, loadMovements],
+    [detail, loadMovements, canAnnul],
   )
 
   const openCreate = (kind = 'inflow') => {
@@ -330,14 +335,18 @@ export function CashMovementsPage() {
         description="Ingresos y egresos unificados de la sesión activa."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => openCreate('outflow')}>
-              <Plus className="h-4 w-4" />
-              Egreso
-            </Button>
-            <Button onClick={() => openCreate('inflow')}>
-              <Plus className="h-4 w-4" />
-              Ingreso
-            </Button>
+            {canOutflow ? (
+              <Button variant="secondary" onClick={() => openCreate('outflow')}>
+                <Plus className="h-4 w-4" />
+                Egreso
+              </Button>
+            ) : null}
+            {canInflow ? (
+              <Button onClick={() => openCreate('inflow')}>
+                <Plus className="h-4 w-4" />
+                Ingreso
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -415,8 +424,8 @@ export function CashMovementsPage() {
           <EmptyState
             title="Sin movimientos"
             description="Registra un ingreso o egreso en esta sesión."
-            actionLabel="Nuevo ingreso"
-            onAction={() => openCreate('inflow')}
+            actionLabel={canInflow ? 'Nuevo ingreso' : undefined}
+            onAction={canInflow ? () => openCreate('inflow') : undefined}
           />
         ) : (
           <DataTable

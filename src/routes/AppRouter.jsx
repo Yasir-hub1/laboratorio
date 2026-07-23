@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, RouterProvider, useLocation, useParams } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from './ProtectedRoute'
+import { RequirePermission } from '@/components/auth/RequirePermission'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { SelectAccessPage } from '@/pages/auth/SelectAccessPage'
 import { SelectCashPage } from '@/pages/auth/SelectCashPage'
@@ -13,6 +14,8 @@ import {
   InsuranceCatalogPricesPage,
   InsurancePricesPage,
   PatientsPage,
+  RolePermissionsPage,
+  RolesPage,
   SpecialtiesPage,
   StaffPage,
   UsersPage,
@@ -37,6 +40,7 @@ import {
   OrderDetailPage,
   OrderManagePage,
   OrderReceptionPage,
+  OrderWorkflowPage,
   QuotationsPage,
 } from '@/pages/clinico'
 import { PaymentsPage, TransactionManagePage } from '@/pages/transacciones'
@@ -54,9 +58,16 @@ import { InsuranceGuestOnly, InsuranceProtectedRoute } from '@/routes/InsuranceP
 import { ROUTES } from '@/utils/constants'
 import { storage } from '@/utils/storage'
 
+function withPerm(permission, element, anyOf) {
+  return (
+    <RequirePermission permission={permission} anyOf={anyOf}>
+      {element}
+    </RequirePermission>
+  )
+}
+
 function postLoginRoute() {
   if (!storage.hasAccessContext()) return ROUTES.SELECT_ACCESS
-  if (!storage.hasCashContext()) return ROUTES.SELECT_CASH
   return ROUTES.DASHBOARD
 }
 
@@ -70,15 +81,15 @@ function GuestOnly({ children }) {
 function AccessOnly({ children }) {
   if (!storage.getToken()) return <Navigate to={ROUTES.LOGIN} replace />
   if (storage.hasAccessContext()) {
-    return <Navigate to={storage.hasCashContext() ? ROUTES.DASHBOARD : ROUTES.SELECT_CASH} replace />
+    return <Navigate to={ROUTES.DASHBOARD} replace />
   }
   return children
 }
 
-function CashOnly({ children }) {
+/** select-cash es opcional; se puede visitar aunque ya haya caja */
+function CashGate({ children }) {
   if (!storage.getToken()) return <Navigate to={ROUTES.LOGIN} replace />
   if (!storage.hasAccessContext()) return <Navigate to={ROUTES.SELECT_ACCESS} replace />
-  if (storage.hasCashContext()) return <Navigate to={ROUTES.DASHBOARD} replace />
   return children
 }
 
@@ -113,10 +124,7 @@ function LegacyRedirect({ to }) {
 }
 
 const router = createBrowserRouter([
-  {
-    path: ROUTES.HOME,
-    element: <LandingPage />,
-  },
+  { path: ROUTES.HOME, element: <LandingPage /> },
   {
     path: ROUTES.LOGIN,
     element: (
@@ -136,9 +144,9 @@ const router = createBrowserRouter([
   {
     path: ROUTES.SELECT_CASH,
     element: (
-      <CashOnly>
+      <CashGate>
         <SelectCashPage />
-      </CashOnly>
+      </CashGate>
     ),
   },
   {
@@ -183,99 +191,251 @@ const router = createBrowserRouter([
   },
   {
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requireCash={false}>
         <AppLayout />
       </ProtectedRoute>
     ),
     children: [
-      { path: 'dashboard', element: <DashboardPage /> },
+      {
+        path: 'dashboard',
+        element: withPerm('inicio.dashboard.listar', <DashboardPage />),
+      },
+
       // Empresa
-      { path: 'empresa/usuarios', element: <UsersPage /> },
-      { path: 'empresa/sucursales', element: <BranchesPage /> },
+      {
+        path: 'empresa/usuarios',
+        element: withPerm('empresa.usuarios.listar', <UsersPage />),
+      },
+      {
+        path: 'empresa/roles',
+        element: withPerm('empresa.roles.listar', <RolesPage />),
+      },
+      {
+        path: 'empresa/roles/:id/permisos',
+        element: withPerm('empresa.roles.asignar-permisos', <RolePermissionsPage />),
+      },
+      {
+        path: 'empresa/sucursales',
+        element: withPerm('empresa.sucursales.listar', <BranchesPage />),
+      },
+
       // Gestión clínica
-      { path: 'clinica/pacientes', element: <PatientsPage /> },
-      { path: 'clinica/medicos', element: <DoctorsPage /> },
-      { path: 'clinica/personal', element: <StaffPage /> },
-      { path: 'clinica/especialidades', element: <SpecialtiesPage /> },
-      { path: 'clinica/seguros', element: <InsurancesPage /> },
-      { path: 'clinica/seguros/precios-catalogo', element: <InsuranceCatalogPricesPage /> },
-      { path: 'clinica/seguros/:id/precios', element: <InsurancePricesPage /> },
+      {
+        path: 'clinica/pacientes',
+        element: withPerm('gestion-clinica.pacientes.listar', <PatientsPage />),
+      },
+      {
+        path: 'clinica/medicos',
+        element: withPerm('gestion-clinica.medicos.listar', <DoctorsPage />),
+      },
+      {
+        path: 'clinica/personal',
+        element: withPerm('gestion-clinica.personal.listar', <StaffPage />),
+      },
+      {
+        path: 'clinica/especialidades',
+        element: withPerm('gestion-clinica.especialidades.listar', <SpecialtiesPage />),
+      },
+      {
+        path: 'clinica/seguros',
+        element: withPerm('gestion-clinica.seguros.listar', <InsurancesPage />),
+      },
+      {
+        path: 'clinica/seguros/precios-catalogo',
+        element: withPerm(
+          'gestion-clinica.precios-particulares.listar',
+          <InsuranceCatalogPricesPage />,
+        ),
+      },
+      {
+        path: 'clinica/seguros/:id/precios',
+        element: withPerm('gestion-clinica.seguros.listar', <InsurancePricesPage />),
+      },
+
       // Atención
-      { path: 'atencion/crear-orden', element: <OrderReceptionPage /> },
-      { path: 'atencion/cotizaciones', element: <QuotationsPage /> },
-      { path: 'atencion/gestionar-orden', element: <OrderManagePage /> },
-      { path: 'atencion/gestionar-orden/:id', element: <OrderDetailPage /> },
+      {
+        path: 'atencion/crear-orden',
+        element: withPerm('atencion.nueva-orden.listar', <OrderReceptionPage />),
+      },
+      {
+        path: 'atencion/gestionar-orden',
+        element: withPerm('atencion.gestion-ordenes.listar', <OrderManagePage />),
+      },
+      {
+        path: 'atencion/gestionar-orden/:id',
+        element: withPerm('atencion.gestion-ordenes.ver', <OrderDetailPage />),
+      },
+      {
+        path: 'atencion/gestionar-orden/:id/gestionar',
+        element: withPerm(null, <OrderWorkflowPage />, [
+          'atencion.gestion-ordenes.gestionar-pendientes',
+          'atencion.gestion-ordenes.gestionar-en-proceso',
+          'atencion.gestion-ordenes.gestionar-en-revision',
+          'atencion.gestion-ordenes.gestionar-revisadas',
+          'atencion.gestion-ordenes.gestionar-completadas',
+          'atencion.gestion-ordenes.gestionar-anuladas',
+        ]),
+      },
+      {
+        path: 'atencion/cotizaciones',
+        element: withPerm('atencion.cotizaciones.listar', <QuotationsPage />),
+      },
+
       // Catálogos
-      { path: 'catalogos/analisis', element: <AnalysesPage /> },
-      { path: 'catalogos/analisis/:analysisId/subgrupos', element: <AnalysisSubgroupsPage /> },
-      { path: 'catalogos/grupos', element: <AnalysisGroupsPage /> },
-      { path: 'catalogos/muestras', element: <SamplesCatalogPage /> },
-      { path: 'catalogos/metodos', element: <MethodsPage /> },
-      { path: 'catalogos/componentes', element: <ComponentsPage /> },
+      {
+        path: 'catalogos/analisis',
+        element: withPerm('catalogos.catalogo-analisis.listar', <AnalysesPage />),
+      },
+      {
+        path: 'catalogos/analisis/:analysisId/subgrupos',
+        element: withPerm('catalogos.analisis-subgrupos.listar', <AnalysisSubgroupsPage />),
+      },
+      {
+        path: 'catalogos/grupos',
+        element: withPerm('catalogos.grupos-analisis.listar', <AnalysisGroupsPage />),
+      },
+      {
+        path: 'catalogos/muestras',
+        element: withPerm('catalogos.tipos-muestra.listar', <SamplesCatalogPage />),
+      },
+      {
+        path: 'catalogos/metodos',
+        element: withPerm('catalogos.metodos.listar', <MethodsPage />),
+      },
+      {
+        path: 'catalogos/componentes',
+        element: withPerm('catalogos.analisis-componentes.listar', <ComponentsPage />),
+      },
+
       // Cobros
-      { path: 'cobros/pagos', element: <PaymentsPage /> },
-      { path: 'cobros/historial', element: <TransactionManagePage /> },
+      {
+        path: 'cobros/pagos',
+        element: withPerm('cobros.pagos.listar', <PaymentsPage />),
+      },
+      {
+        path: 'cobros/historial',
+        element: withPerm('cobros.historial-cobros.listar', <TransactionManagePage />),
+      },
+
       // Caja
-      { path: 'caja/cajas', element: <CashesPage /> },
-      { path: 'caja/apertura', element: <OpenCashPage /> },
-      { path: 'caja/movimientos', element: <CashMovementsPage /> },
-      { path: 'caja/flujo', element: <CashFlowPage /> },
-      { path: 'caja/arqueo', element: <CashAuditPage /> },
-      { path: 'caja/categorias', element: <CashCategoriesPage /> },
-      { path: 'caja/ingresos', element: <LegacyRedirect to={ROUTES.CASH_MOVEMENTS} /> },
-      { path: 'caja/egresos', element: <LegacyRedirect to={ROUTES.CASH_MOVEMENTS} /> },
-      { path: 'caja/tipos-ingreso', element: <LegacyRedirect to={ROUTES.CASH_CATEGORIES} /> },
-      { path: 'caja/tipos-egreso', element: <LegacyRedirect to={ROUTES.CASH_CATEGORIES} /> },
-      // Legacy → Empresa
-      { path: 'parametros/usuarios', element: <LegacyRedirect to={ROUTES.USERS} /> },
-      { path: 'parametros/sucursales', element: <LegacyRedirect to={ROUTES.BRANCHES} /> },
-      // Legacy → Gestión clínica
-      { path: 'parametros/pacientes', element: <LegacyRedirect to={ROUTES.PATIENTS} /> },
-      { path: 'parametros/medicos', element: <LegacyRedirect to={ROUTES.DOCTORS} /> },
-      { path: 'parametros/personal', element: <LegacyRedirect to={ROUTES.STAFF} /> },
-      { path: 'parametros/especialidades', element: <LegacyRedirect to={ROUTES.SPECIALTIES} /> },
-      { path: 'parametros/seguros', element: <LegacyRedirect to={ROUTES.INSURANCES} /> },
+      {
+        path: 'caja/apertura',
+        element: withPerm('caja.apertura-cierre.listar', <OpenCashPage />),
+      },
+      {
+        path: 'caja/movimientos',
+        element: withPerm('caja.movimientos.listar', <CashMovementsPage />),
+      },
+      {
+        path: 'caja/flujo',
+        element: withPerm('caja.flujo-caja.listar', <CashFlowPage />),
+      },
+      {
+        path: 'caja/arqueo',
+        element: withPerm('caja.arqueos.listar', <CashAuditPage />),
+      },
+      {
+        path: 'caja/cajas',
+        element: withPerm('caja.cajas.listar', <CashesPage />),
+      },
+      {
+        path: 'caja/categorias',
+        element: withPerm('caja.categorias.listar', <CashCategoriesPage />),
+      },
+      { path: 'caja/ingresos', element: <Navigate to={ROUTES.CASH_MOVEMENTS} replace /> },
+      { path: 'caja/egresos', element: <Navigate to={ROUTES.CASH_MOVEMENTS} replace /> },
+      { path: 'caja/tipos-ingreso', element: <Navigate to={ROUTES.CASH_CATEGORIES} replace /> },
+      { path: 'caja/tipos-egreso', element: <Navigate to={ROUTES.CASH_CATEGORIES} replace /> },
+
+      // Legacy redirects → rutas oficiales
+      { path: 'parametros/usuarios', element: <Navigate to={ROUTES.USERS} replace /> },
+      { path: 'parametros/sucursales', element: <Navigate to={ROUTES.BRANCHES} replace /> },
+      { path: 'parametros/pacientes', element: <Navigate to={ROUTES.PATIENTS} replace /> },
+      { path: 'parametros/medicos', element: <Navigate to={ROUTES.DOCTORS} replace /> },
+      { path: 'parametros/personal', element: <Navigate to={ROUTES.STAFF} replace /> },
+      {
+        path: 'parametros/especialidades',
+        element: <Navigate to={ROUTES.SPECIALTIES} replace />,
+      },
+      { path: 'parametros/seguros', element: <Navigate to={ROUTES.INSURANCES} replace /> },
       {
         path: 'parametros/seguros/precios-catalogo',
-        element: <LegacyRedirect to={ROUTES.INSURANCE_CATALOG_PRICES} />,
+        element: <Navigate to={ROUTES.INSURANCE_CATALOG_PRICES} replace />,
       },
       { path: 'parametros/seguros/:id/precios', element: <InsurancePricesRedirect /> },
-      { path: 'recepcion/pacientes', element: <LegacyRedirect to={ROUTES.PATIENTS} /> },
-      // Legacy → Atención
-      { path: 'recepcion/crear-orden', element: <LegacyRedirect to={ROUTES.ORDER_RECEPTION} /> },
-      { path: 'recepcion/cotizaciones', element: <LegacyRedirect to={ROUTES.QUOTATIONS} /> },
-      { path: 'recepcion/gestionar-orden', element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} /> },
-      { path: 'recepcion/gestionar-orden/:id', element: <OrderDetailRedirect /> },
-      { path: 'clinico/recepcion-orden', element: <LegacyRedirect to={ROUTES.ORDER_RECEPTION} /> },
-      { path: 'clinico/cotizaciones', element: <LegacyRedirect to={ROUTES.QUOTATIONS} /> },
-      { path: 'clinico/gestion-ordenes', element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} /> },
-      { path: 'clinico/gestion-ordenes/:id', element: <OrderDetailRedirect /> },
-      { path: 'clinico/ordenes', element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} /> },
-      { path: 'clinico/ordenes/:id', element: <OrderDetailRedirect /> },
-      { path: 'clinico/muestras', element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} /> },
-      { path: 'clinico/resultados', element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} /> },
-      { path: 'laboratorio/recepcion', element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} /> },
+      { path: 'analisis/catalogo', element: <Navigate to={ROUTES.ANALYSES} replace /> },
       {
-        path: 'laboratorio/ingreso-resultados',
-        element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} />,
+        path: 'analisis/catalogo/:analysisId/subgrupos',
+        element: <AnalysisSubgroupsRedirect />,
       },
-      { path: 'laboratorio/validacion', element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} /> },
-      { path: 'laboratorio/cierre', element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} /> },
-      { path: 'laboratorio/completadas', element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} /> },
-      { path: 'laboratorio/anuladas', element: <LegacyRedirect to={ROUTES.ORDER_MANAGEMENT} /> },
-      // Legacy → Catálogos
-      { path: 'analisis/catalogo', element: <LegacyRedirect to={ROUTES.ANALYSES} /> },
-      { path: 'analisis/catalogo/:analysisId/subgrupos', element: <AnalysisSubgroupsRedirect /> },
-      { path: 'analisis/grupos', element: <LegacyRedirect to={ROUTES.ANALYSIS_GROUPS} /> },
-      { path: 'analisis/muestras', element: <LegacyRedirect to={ROUTES.SAMPLES_CATALOG} /> },
-      { path: 'analisis/metodos', element: <LegacyRedirect to={ROUTES.METHODS} /> },
-      { path: 'analisis/componentes', element: <LegacyRedirect to={ROUTES.COMPONENTS} /> },
-      // Legacy → Cobros
-      { path: 'transacciones/pagos', element: <LegacyRedirect to={ROUTES.PAYMENTS} /> },
+      { path: 'analisis/grupos', element: <Navigate to={ROUTES.ANALYSIS_GROUPS} replace /> },
+      { path: 'analisis/muestras', element: <Navigate to={ROUTES.SAMPLES_CATALOG} replace /> },
+      { path: 'analisis/metodos', element: <Navigate to={ROUTES.METHODS} replace /> },
+      { path: 'analisis/componentes', element: <Navigate to={ROUTES.COMPONENTS} replace /> },
+      { path: 'recepcion/pacientes', element: <Navigate to={ROUTES.PATIENTS} replace /> },
+      {
+        path: 'recepcion/crear-orden',
+        element: <Navigate to={ROUTES.ORDER_RECEPTION} replace />,
+      },
+      { path: 'recepcion/cotizaciones', element: <Navigate to={ROUTES.QUOTATIONS} replace /> },
+      {
+        path: 'recepcion/gestionar-orden',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+      { path: 'recepcion/gestionar-orden/:id', element: <OrderDetailRedirect /> },
       {
         path: 'transacciones/gestionar',
-        element: <LegacyRedirect to={ROUTES.TRANSACTION_MANAGEMENT} />,
+        element: <Navigate to={ROUTES.TRANSACTION_MANAGEMENT} replace />,
       },
+      { path: 'transacciones/pagos', element: <Navigate to={ROUTES.PAYMENTS} replace /> },
+      {
+        path: 'clinico/recepcion-orden',
+        element: <Navigate to={ROUTES.ORDER_RECEPTION} replace />,
+      },
+      { path: 'clinico/cotizaciones', element: <Navigate to={ROUTES.QUOTATIONS} replace /> },
+      {
+        path: 'clinico/gestion-ordenes',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+      { path: 'clinico/gestion-ordenes/:id', element: <OrderDetailRedirect /> },
+      {
+        path: 'clinico/ordenes',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+      { path: 'clinico/ordenes/:id', element: <OrderDetailRedirect /> },
+      {
+        path: 'clinico/muestras',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+      {
+        path: 'clinico/resultados',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+      {
+        path: 'laboratorio/recepcion',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+      {
+        path: 'laboratorio/ingreso-resultados',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+      {
+        path: 'laboratorio/validacion',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+      {
+        path: 'laboratorio/cierre',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+      {
+        path: 'laboratorio/completadas',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+      {
+        path: 'laboratorio/anuladas',
+        element: <Navigate to={ROUTES.ORDER_MANAGEMENT} replace />,
+      },
+
       { path: ROUTES.NOT_FOUND, element: <NotFoundPage /> },
     ],
   },

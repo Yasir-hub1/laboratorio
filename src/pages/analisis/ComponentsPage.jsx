@@ -7,6 +7,7 @@ import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { EmptyState } from '@/components/common/EmptyState'
 import { RowActions } from '@/components/common/RowActions'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { useApiList } from '@/hooks/useApiList'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
 import { Button, Card, DataTable, Modal, ModalFooter } from '@/components/ui'
@@ -22,6 +23,7 @@ const EMPTY_FORM = {
 }
 
 export function ComponentsPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('catalogos.analisis-componentes')
   const { confirmDelete } = useConfirmAction()
   const index = useIndexQuery(laboratoryApi.getComponentAnalyses)
   const { items: subgroups } = useApiList(laboratoryApi.getAnalysisSubgroups, [])
@@ -85,13 +87,13 @@ export function ComponentsPage() {
         header: 'Acciones',
         cell: ({ row }) => (
           <RowActions
-            onEdit={() => openEdit(row.original)}
-            onDelete={() => handleDelete(row.original)}
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDelete ? () => handleDelete(row.original) : undefined}
           />
         ),
       },
     ],
-    [handleDelete],
+    [canEdit, canDelete, handleDelete],
   )
 
   const handleSubmit = async (e) => {
@@ -126,10 +128,12 @@ export function ComponentsPage() {
         title="Componentes de análisis"
         description="Parámetros medidos: requiere subgrupo, análisis de laboratorio y nombre."
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Nuevo componente
-          </Button>
+          canCreate ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nuevo componente
+            </Button>
+          ) : null
         }
       />
 
@@ -138,8 +142,8 @@ export function ComponentsPage() {
           <EmptyState
             title="Sin componentes"
             description="Registra el primer componente de análisis."
-            actionLabel="Nuevo componente"
-            onAction={openCreate}
+            actionLabel={canCreate ? "Nuevo componente" : undefined}
+            onAction={canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable

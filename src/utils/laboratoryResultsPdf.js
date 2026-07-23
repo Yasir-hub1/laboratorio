@@ -1,7 +1,7 @@
 import { LABORATORY_RESULTS_REPORT_STYLES } from './laboratoryResultsReportHtml'
 
 export const LABORATORY_RESULTS_PDF_OPTIONS = {
-  margin: [10, 10, 10, 10],
+  margin: [12, 12, 20, 12],
   filename: 'resultados.pdf',
   image: { type: 'jpeg', quality: 0.98 },
   html2canvas: {
@@ -87,12 +87,27 @@ function mountCloneForPdf(sourceRoot) {
   host.style.zIndex = '2147483646'
   host.style.opacity = '0'
   host.style.pointerEvents = 'none'
-  host.style.overflow = 'hidden'
+  host.style.overflow = 'visible'
 
   const style = document.createElement('style')
   style.textContent = LABORATORY_RESULTS_REPORT_STYLES
   host.appendChild(style)
-  host.appendChild(sourceRoot.cloneNode(true))
+
+  const clone = sourceRoot.cloneNode(true)
+  const sheet = clone.classList?.contains('sheet')
+    ? clone
+    : clone.querySelector?.('.sheet')
+  if (sheet) {
+    sheet.style.paddingBottom = '28px'
+    sheet.style.boxSizing = 'border-box'
+    const spacer = document.createElement('div')
+    spacer.setAttribute('aria-hidden', 'true')
+    spacer.style.height = '14px'
+    spacer.style.width = '100%'
+    sheet.appendChild(spacer)
+  }
+
+  host.appendChild(clone)
   document.body.appendChild(host)
   return host
 }

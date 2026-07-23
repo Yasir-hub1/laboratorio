@@ -7,6 +7,7 @@ import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { EmptyState } from '@/components/common/EmptyState'
 import { RowActions } from '@/components/common/RowActions'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
 import { Button, Card, DataTable, Modal, ModalFooter } from '@/components/ui'
 import { Input } from '@/components/ui/Input'
@@ -18,6 +19,7 @@ import { toastApiError, toastApiSuccess } from '@/utils/toastApi'
 const EMPTY_FORM = { name: '' }
 
 export function SamplesCatalogPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('catalogos.tipos-muestra')
   const { confirmDelete } = useConfirmAction()
   const index = useIndexQuery(laboratoryApi.getSamples)
   const [modalOpen, setModalOpen] = useState(false)
@@ -68,13 +70,13 @@ export function SamplesCatalogPage() {
         header: 'Acciones',
         cell: ({ row }) => (
           <RowActions
-            onEdit={() => openEdit(row.original)}
-            onDelete={() => handleDelete(row.original)}
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDelete ? () => handleDelete(row.original) : undefined}
           />
         ),
       },
     ],
-    [handleDelete],
+    [canEdit, canDelete, handleDelete],
   )
 
   const handleSubmit = async (e) => {
@@ -110,10 +112,12 @@ export function SamplesCatalogPage() {
         title="Tipos de muestra"
         description="Catálogo de tipos de muestra utilizados en los análisis."
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Nuevo tipo
-          </Button>
+          canCreate ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nuevo tipo
+            </Button>
+          ) : null
         }
       />
 
@@ -122,8 +126,8 @@ export function SamplesCatalogPage() {
           <EmptyState
             title="Sin tipos de muestra"
             description="Registra el primer tipo de muestra."
-            actionLabel="Nuevo tipo"
-            onAction={openCreate}
+            actionLabel={canCreate ? "Nuevo tipo" : undefined}
+            onAction={canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable

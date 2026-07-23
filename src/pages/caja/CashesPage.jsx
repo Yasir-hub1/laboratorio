@@ -6,6 +6,7 @@ import { LoadingScreen } from '@/components/common/LoadingScreen'
 import { EmptyState } from '@/components/common/EmptyState'
 import { RowActions } from '@/components/common/RowActions'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { useAuth } from '@/hooks/useAuth'
 import { useApiList } from '@/hooks/useApiList'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
@@ -20,6 +21,7 @@ import { toastApiError, toastApiSuccess } from '@/utils/toastApi'
 const EMPTY_FORM = { name: '', branch_id: '' }
 
 export function CashesPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('caja.cajas')
   const { branchId: sessionBranchId } = useAuth()
   const { confirmDeactivate } = useConfirmAction()
   const { items: branches } = useApiList(laboratoryApi.getBranches, [])
@@ -98,11 +100,14 @@ export function CashesPage() {
         id: 'actions',
         header: 'Acciones',
         cell: ({ row }) => (
-          <RowActions onEdit={() => openEdit(row.original)} onDelete={() => handleDeactivate(row.original)} />
+          <RowActions
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDeactivate ? () => handleDeactivate(row.original) : undefined}
+          />
         ),
       },
     ],
-    [handleDeactivate],
+    [canEdit, canDeactivate, handleDeactivate],
   )
 
   const handleSubmit = async (e) => {
@@ -135,10 +140,12 @@ export function CashesPage() {
         title="Cajas"
         description="Mantenimiento de cajas por sucursal. La asignación de usuarios se gestiona en Usuarios."
         actions={
-          <Button onClick={openCreate} disabled={!filterBranchId}>
-            <Plus className="h-4 w-4" />
-            Nueva caja
-          </Button>
+          canCreate ? (
+            <Button onClick={openCreate} disabled={!filterBranchId}>
+              <Plus className="h-4 w-4" />
+              Nueva caja
+            </Button>
+          ) : null
         }
       />
 
@@ -167,8 +174,8 @@ export function CashesPage() {
           <EmptyState
             title="Sin cajas"
             description="Registra cajas para esta sucursal."
-            actionLabel="Nueva caja"
-            onAction={openCreate}
+            actionLabel={canCreate ? "Nueva caja" : undefined}
+            onAction={canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable

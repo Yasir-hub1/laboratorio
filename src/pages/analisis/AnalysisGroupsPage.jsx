@@ -9,6 +9,7 @@ import { RowActions } from '@/components/common/RowActions'
 import { EntityViewModal } from '@/components/common/EntityViewModal'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
 import { useEntityView } from '@/hooks/useEntityView'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
 import {
   Badge,
@@ -33,6 +34,7 @@ function groupDetailFields(data) {
 }
 
 export function AnalysisGroupsPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('catalogos.grupos-analisis')
   const { confirmDelete } = useConfirmAction()
   const index = useIndexQuery(laboratoryApi.getAnalysisGroups)
   const [modalOpen, setModalOpen] = useState(false)
@@ -126,14 +128,14 @@ export function AnalysisGroupsPage() {
         header: 'Acciones',
         cell: ({ row }) => (
           <RowActions
-            onView={() => openView(row.original)}
-            onEdit={() => openEdit(row.original)}
-            onDelete={() => handleDelete(row.original)}
+            onView={canView ? () => openView(row.original) : undefined}
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDelete ? () => handleDelete(row.original) : undefined}
           />
         ),
       },
     ],
-    [openView, openEdit, handleDelete],
+    [canView, canEdit, canDelete, openView, openEdit, handleDelete],
   )
 
   const handleChange = (e) => {
@@ -174,10 +176,12 @@ export function AnalysisGroupsPage() {
         title="Grupos de análisis"
         description="Organiza los análisis en grupos para el catálogo del laboratorio."
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Nuevo grupo
-          </Button>
+          canCreate ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Nuevo grupo
+            </Button>
+          ) : null
         }
       />
 
@@ -186,8 +190,8 @@ export function AnalysisGroupsPage() {
           <EmptyState
             title="Sin grupos"
             description="Registra el primer grupo de análisis."
-            actionLabel="Nuevo grupo"
-            onAction={openCreate}
+            actionLabel={canCreate ? "Nuevo grupo" : undefined}
+            onAction={canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable
@@ -232,7 +236,7 @@ export function AnalysisGroupsPage() {
         loading={detailLoading}
         data={selected}
         fields={groupDetailFields(selected)}
-        onToggleStatus={handleToggleStatus}
+        onToggleStatus={canDeactivate ? handleToggleStatus : undefined}
         statusToggling={statusToggling}
       />
     </AnimatedPage>

@@ -1,7 +1,8 @@
 /** Utilidades compartidas para exportar HTML → PDF (html2pdf) e imprimir iframe. */
 
 export const DEFAULT_HTML_PDF_OPTIONS = {
-  margin: [10, 10, 10, 10],
+  /** top, right, bottom, left (mm) — bottom mayor para no cortar el pie */
+  margin: [12, 12, 20, 12],
   filename: 'documento.pdf',
   image: { type: 'jpeg', quality: 0.98 },
   html2canvas: {
@@ -82,12 +83,29 @@ function mountCloneForPdf(sourceRoot, stylesCss) {
   host.style.zIndex = '2147483646'
   host.style.opacity = '0'
   host.style.pointerEvents = 'none'
-  host.style.overflow = 'hidden'
+  // visible: overflow:hidden recorta el pie al capturar con html2canvas
+  host.style.overflow = 'visible'
 
   const style = document.createElement('style')
   style.textContent = stylesCss
   host.appendChild(style)
-  host.appendChild(sourceRoot.cloneNode(true))
+
+  const clone = sourceRoot.cloneNode(true)
+  // El padding debe ir en .sheet (es lo que captura html2pdf), no solo en el host
+  const sheet = clone.classList?.contains('sheet')
+    ? clone
+    : clone.querySelector?.('.sheet')
+  if (sheet) {
+    sheet.style.paddingBottom = '28px'
+    sheet.style.boxSizing = 'border-box'
+    const spacer = document.createElement('div')
+    spacer.setAttribute('aria-hidden', 'true')
+    spacer.style.height = '14px'
+    spacer.style.width = '100%'
+    sheet.appendChild(spacer)
+  }
+
+  host.appendChild(clone)
   document.body.appendChild(host)
   return host
 }

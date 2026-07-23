@@ -45,7 +45,8 @@ export function buildPatientPayload(form) {
     gender: normalizePatientGender(form.gender),
     birth_date: form.birth_date || undefined,
     email: form.email,
-    password: form.password,
+    // Opcional: si viene vacío, el backend genera XX.YY.* (2 letras nombre + 2 dígitos CI)
+    password: form.password || undefined,
   })
 }
 
@@ -197,9 +198,18 @@ export function buildSaveOrderResultsPayload(entries) {
             pickDefined({
               component_analysis_id: asApiId(r.component_analysis_id),
               value_obtained: r.value_obtained != null ? String(r.value_obtained) : undefined,
+              valor_ref_min:
+                r.valor_ref_min != null && r.valor_ref_min !== ''
+                  ? Number(r.valor_ref_min)
+                  : undefined,
+              valor_ref_max:
+                r.valor_ref_max != null && r.valor_ref_max !== ''
+                  ? Number(r.valor_ref_max)
+                  : undefined,
+              unit_measurement: r.unit_measurement || undefined,
             }),
           )
-          .filter((r) => r.component_analysis_id),
+          .filter((r) => r.component_analysis_id && r.value_obtained != null),
       }))
       .filter((e) => e.sample_analysis_id && e.results.length > 0),
   }
@@ -208,6 +218,18 @@ export function buildSaveOrderResultsPayload(entries) {
 export function buildValidateOrderResultsPayload({ result_ids, validate_all }) {
   if (validate_all) return { validate_all: true }
   return { result_ids: (result_ids ?? []).map(asApiId).filter(Boolean) }
+}
+
+/** Body POST …/update-result-validations */
+export function buildUpdateResultValidationsPayload(entries) {
+  return {
+    entries: (entries ?? [])
+      .map((e) => ({
+        result_id: asApiId(e.result_id),
+        validated: Boolean(e.validated),
+      }))
+      .filter((e) => e.result_id),
+  }
 }
 
 export function buildWorkflowTransitionPayload(workflow_status) {
@@ -423,7 +445,7 @@ export function buildSamplePayload(form) {
   })
 }
 
-export function buildUserPayload(form, { isEdit = false } = {}) {
+export function buildUserPayload(form, { isEdit = false, sendPersonId = true } = {}) {
   const roleIds = form.role_ids?.length
     ? form.role_ids.map(asApiId).filter(Boolean)
     : form.role_id
@@ -436,13 +458,19 @@ export function buildUserPayload(form, { isEdit = false } = {}) {
       ? [asApiId(form.branch_id)]
       : undefined
 
-  return pickDefined({
+  const payload = pickDefined({
     name: form.name,
     username: form.username,
     email: form.email,
     password: !isEdit || form.password ? form.password : undefined,
-    person_id: asApiId(form.person_id),
     roles: roleIds?.length ? roleIds : undefined,
     branches: branchIds?.length ? branchIds : undefined,
   })
+
+  // Crear / editar sin vinculación: enviar person_id (uuid o null). Ya vinculado: omitir.
+  if (sendPersonId) {
+    payload.person_id = asApiId(form.person_id) ?? null
+  }
+
+  return payload
 }

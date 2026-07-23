@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/common/EmptyState'
 import { RowActions } from '@/components/common/RowActions'
 import { useConfirmAction } from '@/hooks/useConfirmAction'
 import { useEntityView } from '@/hooks/useEntityView'
+import { useCrudPermission } from '@/hooks/usePermission'
 import { useIndexQuery } from '@/hooks/useIndexQuery'
 import {
   Badge,
@@ -51,6 +52,7 @@ function rowToForm(row) {
 }
 
 export function AnalysisSubgroupsPage() {
+  const { canView, canCreate, canEdit, canDeactivate, canDelete } = useCrudPermission('catalogos.analisis-subgrupos')
   const { analysisId } = useParams()
   const { confirm } = useConfirmAction()
   const [analysis, setAnalysis] = useState(null)
@@ -186,9 +188,9 @@ export function AnalysisSubgroupsPage() {
         header: 'Acciones',
         cell: ({ row }) => (
           <RowActions
-            onView={() => openView(row.original)}
-            onEdit={() => openEdit(row.original)}
-            onDelete={() => handleDelete(row.original)}
+            onView={canView ? () => openView(row.original) : undefined}
+            onEdit={canEdit ? () => openEdit(row.original) : undefined}
+            onDelete={canDelete ? () => handleDelete(row.original) : undefined}
             onExtra={() => setComponentsSubgroup(row.original)}
             extraLabel="Componentes"
             extraIcon={Layers}
@@ -196,7 +198,7 @@ export function AnalysisSubgroupsPage() {
         ),
       },
     ],
-    [openView, handleDelete],
+    [canView, canEdit, canDelete, openView, handleDelete],
   )
 
   const handleChange = (e) => {
@@ -259,10 +261,12 @@ export function AnalysisSubgroupsPage() {
                 Volver al catálogo
               </Link>
             </Button>
-            <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" />
-              Nuevo subgrupo
-            </Button>
+            {canCreate ? (
+              <Button onClick={openCreate}>
+                <Plus className="h-4 w-4" />
+                Nuevo subgrupo
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -272,8 +276,8 @@ export function AnalysisSubgroupsPage() {
           <EmptyState
             title="Sin subgrupos"
             description="Registra el primer subgrupo de este análisis."
-            actionLabel="Nuevo subgrupo"
-            onAction={openCreate}
+            actionLabel={canCreate ? "Nuevo subgrupo" : undefined}
+            onAction={canCreate ? openCreate : undefined}
           />
         ) : (
           <DataTable
@@ -329,7 +333,7 @@ export function AnalysisSubgroupsPage() {
         loading={detailLoading}
         data={selected}
         fields={subgroupDetailFields(selected)}
-        onToggleStatus={handleToggleStatus}
+        onToggleStatus={canDeactivate ? handleToggleStatus : undefined}
         statusToggling={statusToggling}
         footerExtra={
           selected ? (
